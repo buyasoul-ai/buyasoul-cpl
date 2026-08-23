@@ -29,6 +29,9 @@
   const BIT_EXPLORED = 1;
   const BIT_VISIBLE = 2;
 
+  // playerIndex -> faction (must match rts-engine-core GameEntity factions)
+  const PLAYER_FACTIONS = ['voidCovenant', 'imperium', 'bioHive'];
+
   // Precomputed disc stencils per radius (row-contiguous — no sqrt in hot loop)
   const _discCache = new Map(); // radius (cells) -> { rows: [{start,end}...] }
 
@@ -100,10 +103,12 @@
     /** Paint vision discs for all friendly units of this player. */
     _paintPlayer(playerIndex, mask) {
       const discs = [];
+      const wantFaction = PLAYER_FACTIONS[playerIndex] || 'voidCovenant';
       for (const ent of this._ents.values()) {
         if (ent.isDead || !ent.mesh) continue;
-        // Only entities of this player grant vision (or neutral share)
-        if (ent.faction !== 'player' && playerIndex !== 0) continue;
+        // Resources and foreign-faction entities never grant this player vision
+        if (ent.type === 'resource') continue;
+        if (ent.faction !== wantFaction) continue;
         const radius = ent.visionRange || 15;
         const radiusCells = radius / CELL;
         const stencil = discStencil(radiusCells);
@@ -161,6 +166,7 @@
       const r = entity.visionRange || 15;
       const key = entity.id + ':' + r;
       if (!this._visionCache.has(key)) {
+        if (this._visionCache.size > 1024) this._visionCache.clear();
         this._visionCache.set(key, r / CELL);
       }
       return this._visionCache.get(key);

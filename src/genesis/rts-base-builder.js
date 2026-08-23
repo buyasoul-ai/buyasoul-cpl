@@ -224,9 +224,11 @@
 
   function validatePlacement(x, z) {
     const def = activeBuild.def;
-    // Funds
+    // Funds — every resource in the cost table must be covered
     const funds = getFunds();
-    if (funds.profit < def.cost.profit || funds.love < def.cost.love) return false;
+    if (funds.profit < (def.cost.profit || 0)) return false;
+    if (funds.love < (def.cost.love || 0)) return false;
+    if (funds.wood < (def.cost.wood || 0)) return false;
     // Walkability / collision (sample footprint)
     if (window.RTSNavGrid) {
       const steps = 4;
@@ -238,11 +240,18 @@
         if (!window.RTSNavGrid.isWalkable(px, pz)) return false;
       }
     }
-    // RTSEngineCore collision with existing buildings
+    // RTSEngineCore collision: true footprint overlap (circle-circle).
+    // Farms skip town halls — the hall is their required placement anchor.
     if (window.RTSEngineCore) {
-      const existing = window.RTSEngineCore.getEntitiesInRadius({ x, y: 0, z }, def.radius + 8);
+      const existing = window.RTSEngineCore.getEntitiesInRadius({ x, y: 0, z }, def.radius + 50);
       for (const ent of existing) {
-        if (ent.type === 'building' && !ent.isDead) return false;
+        if (ent.type !== 'building' || ent.isDead || !ent.mesh) continue;
+        if (activeBuild.defId === 'farm' && ent.isTownHall) continue;
+        const er = ent.radius || 1;
+        const dx = ent.mesh.position.x - x;
+        const dz = ent.mesh.position.z - z;
+        const minDist = er + def.radius;
+        if ((dx * dx + dz * dz) < minDist * minDist) return false;
       }
     }
     return true;
@@ -253,27 +262,48 @@
     return { profit: r.profit || 0, love: r.love || 0, tax: r.tax || 0, wood: r.wood || 0 };
   }
 
+  // ─── PAYMENT (validate-all → spend-all → place → refund-on-fail) ────
+  const COST_KEYS = ['profit', 'love', 'wood'];
+
+  function payCost(cost) {
+    if (!window.RTSEconomySystem || !window.RTSEconomySystem.spendResource) return true;
+    const eco = window.RTSEconomySystem;
+    const spent = [];
+    for (const key of COST_KEYS) {
+      const amt = cost[key] || 0;
+      if (amt <= 0) continue;
+      if (!eco.spendResource(key, amt)) {
+        for (const s of spent) eco.addResource(s.key, s.amt); // roll back
+        console.warn('[RTSBuilder] Not enough ' + key + ' for ' + activeBuild.def.name);
+        return false;
+      }
+      spent.push({ key, amt });
+    }
+    return true;
+  }
+
+  function refundCost(cost) {
+    if (!window.RTSEconomySystem || !window.RTSEconomySystem.addResource) return;
+    for (const key of COST_KEYS) {
+      if ((cost[key] || 0) > 0) window.RTSEconomySystem.addResource(key, cost[key]);
+    }
+  }
+
   // ─── PLACEMENT ──────────────────────────────────────────────────────
   function placeBuilding(x, z) {
     if (!activeBuild || !activeBuild.valid) return;
     const def = activeBuild.def;
     const defId = activeBuild.defId;
 
-    // Spend resources (handle wood cost for farms)
-    if (window.RTSEconomySystem && window.RTSEconomySystem.spendResource) {
-      if (!window.RTSEconomySystem.spendResource('profit', def.cost.profit || 0)) {
-        console.warn('[RTSBuilder] Not enough profit');
-        return;
-      }
-      if (def.cost.love > 0) window.RTSEconomySystem.spendResource('love', def.cost.love);
-      if (def.cost.wood > 0) window.RTSEconomySystem.spendResource('wood', def.cost.wood);
-    }
+    // Spend only after validation passed; refund everything on placement failure
+    if (!payCost(def.cost)) return;
 
     // Special handling for farms - use RTSFarmSystem
     if (defId === 'farm' && window.RTSFarmSystem) {
-      const entity = window.RTSFarmSystem.registerFarm(SCENE, x, z, 'imperium');
+      const entity = window.RTSFarmSystem.registerFarm(SCENE, x, z, 'voidCovenant');
       if (!entity) {
-        console.warn('[RTSBuilder] Farm placement failed - no town hall nearby');
+        refundCost(def.cost);
+        console.warn('[RTSBuilder] Farm placement failed - no town hall nearby (cost refunded)');
         return;
       }
       // Mark nav grid blocked
@@ -323,7 +353,7 @@
     // Register with RTSEngineCore
     let entity = null;
     if (window.RTSEngineCore) {
-      entity = window.RTSEngineCore.registerEntity(group, 'building', 'imperium', def.hp, def.radius);
+      entity = window.RTSEngineCore.registerEntity(group, 'building', 'voidCovenant', def.hp, def.radius);
       if (entity) {
         entity.isPlayerBuilt = true;
         entity.isTownHall = (defId === 'townhall');

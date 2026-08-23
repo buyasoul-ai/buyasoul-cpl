@@ -90,7 +90,7 @@ window.__GENESIS_RTS_WAR_COMMAND = (typeof window.__GENESIS_RTS_WAR_COMMAND === 
       ent.speed = 4.5;
       ent.attackDamage = 15;
       ent.attackRange = 6;
-      ent.userData = { role: 'soldier' };
+      mesh.userData.rtsRole = 'soldier'; // additive — never overwrite userData (entityId lives there)
     }
 
     // 4 harvesters behind the line
@@ -101,7 +101,7 @@ window.__GENESIS_RTS_WAR_COMMAND = (typeof window.__GENESIS_RTS_WAR_COMMAND === 
       const ent = window.RTSEngineCore.registerEntity(mesh, 'unit', 'voidCovenant', 200, 1.4);
       ent.speed = 4.0;
       ent.maxCarry = 25;
-      ent.userData = { role: 'harvester' };
+      mesh.userData.rtsRole = 'harvester'; // additive — never overwrite userData (entityId lives there)
     }
 
     SCENE_REF.add(group);
@@ -110,8 +110,10 @@ window.__GENESIS_RTS_WAR_COMMAND = (typeof window.__GENESIS_RTS_WAR_COMMAND === 
   }
 
   // ─── INSTALL / TICK ────────────────────────────────────────────────────
+  let _installed = false;
   function install(scene) {
-    if (!scene) return;
+    if (_installed || !scene) return; // latch — double-call double-spawns the army
+    _installed = true;
     SCENE_REF = scene;
 
     // 1. Crash the AI timeline to real-war speeds.

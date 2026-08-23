@@ -26,13 +26,13 @@
   const RAID_PRESSURE = 2;      // raid when enemy count ratio > this
   const T = () => window.THREE;
 
-  // Which factions the brain controls
-  const AI_FACTIONS = ['voidCovenant', 'bioHive'];
+  // Which factions the brain controls (voidCovenant = human player, never AI)
+  const AI_FACTIONS = ['imperium', 'bioHive'];
 
   class RTSAIBrain {
     constructor(opts) {
       this._entities = opts.entities || window.RTSEngineCore?.ENTITIES || new Map();
-      this._fog = opts.fog || window.RTSFogOfWar || null;
+      this._fog = opts.fog || window.RTSFogOfWarInstance || null;
       this._playerIndex = opts.playerIndex || 1; // player 0 = human
       this._strategicAcum = 0;
       this._tacticalAcum = 0;
@@ -89,7 +89,7 @@
           if (ent.faction === faction) {
             if (ent.type === 'unit') ownUnits++;
             if (ent.type === 'building') ownBuildings++;
-          } else if (ent.faction === 'player' && ent.type === 'unit' && this._canSee(faction, ent)) {
+          } else if (ent.faction === 'voidCovenant' && ent.type === 'unit' && this._canSee(faction, ent)) {
             visibleEnemies++;
           }
         }
@@ -120,7 +120,7 @@
       let target = null, bestDist = Infinity;
       for (const ent of this._entities.values()) {
         if (ent.isDead || !ent.mesh) continue;
-        if (ent.faction !== 'player' || !this._canSee(faction, ent)) continue;
+        if (ent.faction !== 'voidCovenant' || !this._canSee(faction, ent)) continue;
         const d = ent.mesh.position.length();
         if (d < bestDist) { bestDist = d; target = ent; }
       }

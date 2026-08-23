@@ -258,6 +258,7 @@ export function install(Genesis) {
   let _genesisCitadel = null;
   let _omegaCrucible = null;
   const _allSovereignCities = [];
+  window.sovereignCities = _allSovereignCities;
 
   // Portal connections between worlds
   const PORTALS = [];
@@ -3479,6 +3480,14 @@ export function install(Genesis) {
         window.RTSProductionPalette.install();
       } catch(e) { console.warn('[VoidPopulation] RTSProductionPalette install failed:', e && e.message); }
     }
+    // RTS-7: Fog of War — create THE instance (engine-core, minimap, ai-brain all read window.RTSFogOfWarInstance)
+    if (window.RTSFogOfWar && !window.RTSFogOfWarInstance) {
+      try {
+        const fogInstance = new window.RTSFogOfWar({ scene: scene, entities: window.RTSEngineCore?.ENTITIES });
+        fogInstance.install();
+        window.RTSFogOfWarInstance = fogInstance;
+      } catch(e) { console.warn('[VoidPopulation] RTSFogOfWar install failed:', e && e.message); }
+    }
     // RTS-6: Minimap — bottom-right canvas with terrain/fog/entities
     if (window.RTSMinimap) {
       try {
@@ -3536,6 +3545,14 @@ export function install(Genesis) {
       }
       console.log('[VoidPopulation] Registered Grand Tower + city centers with AoE-style RTS extensions.');
     }
+
+    // Prime fog masks now that town halls exist (prevents first-frame all-hidden)
+    if (window.RTSFogOfWarInstance) {
+      try {
+        window.RTSFogOfWarInstance.tick(0.05);
+        window.RTSFogOfWarInstance.reveal(0, -104, 401, 140); // PLAYER_HOME start area
+      } catch(e) { /* best-effort prime */ }
+    }
     
     if (window.DivineTerrainSculptor) {
       try { window.DivineTerrainSculptor.install(scene, camera); } catch(e) { console.warn('[VoidPopulation] DivineTerrainSculptor install failed:', e && e.message); }
@@ -3558,6 +3575,18 @@ export function install(Genesis) {
     }
     if (window.RTSAIFaction) {
       try { window.RTSAIFaction.install(scene); } catch(e) { console.warn('[VoidPopulation] RTSAIFaction install failed:', e && e.message); }
+    }
+
+    // RTS AI Brain — fog-limited strategic/tactical AI (imperium + bioHive)
+    if (window.RTSAIBrain && !window.RTSAIBrainInstance) {
+      try {
+        window.RTSAIBrainInstance = new window.RTSAIBrain({
+          entities: window.RTSEngineCore?.ENTITIES,
+          fog: window.RTSFogOfWarInstance,
+          playerIndex: 1
+        });
+        window.RTSAIBrainInstance.install();
+      } catch(e) { console.warn('[VoidPopulation] RTSAIBrain install failed:', e && e.message); }
     }
 
     // Install Terminal Sanctum in Central Pyramid (0,0,0)
@@ -3930,6 +3959,10 @@ export function install(Genesis) {
     if (window.RTSBridge && window.RTSBridge.tick) {
       window.RTSBridge.tick(dt);
     }
+    // Fog of war refreshes before engine-core so applyFogVisibility uses fresh masks
+    if (window.RTSFogOfWarInstance && window.RTSFogOfWarInstance.tick) {
+      window.RTSFogOfWarInstance.tick(dt);
+    }
     if (window.RTSEngineCore && window.RTSEngineCore.tick) {
       window.RTSEngineCore.tick(dt);
     }
@@ -3977,10 +4010,8 @@ export function install(Genesis) {
     if (window.RTSAIFaction && window.RTSAIFaction.tick) {
       window.RTSAIFaction.tick(dt);
     }
-    
-    // RTS Subsystem tick
-    if (window.RTSSubsystem) {
-      try { window.RTSSubsystem.tick(dt, scene); } catch(e) { /* silent */ }
+    if (window.RTSAIBrainInstance && window.RTSAIBrainInstance.tick) {
+      window.RTSAIBrainInstance.tick(dt);
     }
   }
 

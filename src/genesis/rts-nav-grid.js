@@ -68,6 +68,10 @@
     }
   }
 
+  function unblockCircle(x, z, radius) {
+    blockCircle(x, z, radius, false);
+  }
+
   function isWalkable(x, z) {
     const c = worldToCell(x, z);
     if (!c) return false;
@@ -285,6 +289,7 @@
     cellToWorld,
     setBlockedAt,
     blockCircle,
+    unblockCircle,
     isWalkable,
     findPath,
     debugVisible,

@@ -12,6 +12,9 @@
   'use strict';
 
   let gameOverActive = false;
+  // Win/lose evaluation unlocks only after the Grand Tower registers — prevents
+  // the render-loop race where tick() fires before populate() finishes.
+  let _sawGrandTower = false;
   let stats = {
     unitsTrained: 0,
     structuresBuilt: 0,
@@ -111,6 +114,14 @@
       if (ent.isEnemyBase) {
         enemyBasesAlive++;
       }
+    }
+
+    // Record first sighting of the Grand Tower; before that, the match
+    // doesn't exist yet — neither defeat nor victory may fire.
+    if (!_sawGrandTower) {
+      if (!grandTowerAlive) return;
+      _sawGrandTower = true;
+      stats.startTime = Date.now(); // match starts at registration, not script load
     }
 
     // 1. Loss Condition (Grand Tower fell)

@@ -67,7 +67,16 @@
   }
 
   function tickProtossShields(dt) {
-    for (const data of SHIELDED_UNITS) {
+    // Purge shields of dead/detached units — SHIELDED_UNITS must not grow forever
+    for (let i = SHIELDED_UNITS.length - 1; i >= 0; i--) {
+      const data = SHIELDED_UNITS[i];
+      const entId = data.mesh && data.mesh.userData ? data.mesh.userData.entityId : null;
+      const ent = (entId && window.RTSEngineCore) ? window.RTSEngineCore.getEntity(entId) : null;
+      if (!data.mesh.parent || !ent || ent.isDead) {
+        if (data.shieldMesh && data.shieldMesh.parent) data.shieldMesh.parent.remove(data.shieldMesh);
+        SHIELDED_UNITS.splice(i, 1);
+        continue;
+      }
       if (data.shield < data.maxShield) {
         data.rechargeTimer += dt;
         if (data.rechargeTimer > 3) { // Recharge after 3s out of combat
@@ -94,6 +103,8 @@
       side: T.DoubleSide
     });
 
+    // Replace any previous creep plane — don't orphan the old mesh in the scene
+    if (creepPlane && creepPlane.parent) creepPlane.parent.remove(creepPlane);
     creepPlane = new T.Mesh(geo, mat);
     creepPlane.rotation.x = -Math.PI / 2;
     creepPlane.position.copy(position);

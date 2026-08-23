@@ -39,7 +39,7 @@
       this._scene = opts.scene || null;
       this._camera = opts.camera || null;
       this._entities = opts.entities || window.RTSEngineCore?.ENTITIES || new Map();
-      this._fog = opts.fog || window.RTSFogOfWar || null;
+      this._fog = opts.fog || window.RTSFogOfWarInstance || null;
       this._worldSize = opts.worldSize || MAP_RANGE;
       this._half = this._worldSize * 0.5;
       this._onRightClick = opts.onRightClick || null; // callback({worldX,worldZ})
@@ -189,8 +189,7 @@
         const px = ((wx + half) / worldSize) * LADO;
         const py = ((wz + half) / worldSize) * LADO;
 
-        const color = PLAYER_COLORS[0] || 0x00aaff;
-        g.fillStyle = ent.faction === 'player' ? '#00ff88'
+        g.fillStyle = ent.faction === 'voidCovenant' ? '#00ff88'
                     : ent.faction === 'neutral' ? '#aaaaaa'
                     : '#ff4444';
         const size = ent.type === 'building' ? 4 : 2;

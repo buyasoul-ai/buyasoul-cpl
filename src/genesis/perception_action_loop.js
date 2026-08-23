@@ -98,6 +98,9 @@
         st.pos = pos;
         st.home = (r.meta && r.meta.home) || pos;
         st.route = (r.meta && r.meta.route) || null;
+        st.work = (r.meta && r.meta.work) || null;
+        st.social = (r.meta && r.meta.social) || null;
+        st.profession = (r.meta && r.meta.profession) || null;
         st.playerPos = pPos; st.playerNear = playerNear; st.band = band; st.time = time; st.idx = i;
 
         // PLAN

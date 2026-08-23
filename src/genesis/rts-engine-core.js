@@ -52,6 +52,9 @@
       this.currentCooldown = 0;
       this.targetId = null;
 
+      // Vision (consumed by rts-fog-of-war)
+      this.visionRange = (type === 'building') ? 60 : 45;
+
       // State
       this.state = 'idle'; // 'idle', 'moving', 'attacking', 'harvesting', 'returning', 'waiting', 'repairing'
       this.targetPos = null;
@@ -84,6 +87,9 @@
 
     takeDamage(amount) {
       if (this.isDead) return;
+
+      // Any damage resets the Protoss "out of combat" recharge window
+      if (this.shieldData) this.shieldData.rechargeTimer = 0;
 
       // Asymmetric Factions: Protoss Shield Intercept
       if (this.shieldData && this.shieldData.shield > 0) {
@@ -173,8 +179,8 @@
     return BUILD_TIMES[buildingType] || 0;
   }
 
-  // Create a building with construction phase
-  function createBuildingWithBuildTime(scene, mesh, type, faction, maxHp, radius, buildTime) {
+  // Create a building with construction phase (legacy mesh-based signature)
+  function registerBuildingFromMesh(scene, mesh, type, faction, maxHp, radius, buildTime) {
     var bt = buildTime || getBuildTime(type) || 0;
     var ent = registerEntity(mesh, "building", faction, maxHp, radius, bt, bt > 0 ? 0 : 1);
     ent.buildingType = type;
@@ -603,7 +609,7 @@
 
 
   // createBuildingWithBuildTime is defined above (uses BUILD_TIMES from line 167)
-  function createBuildingWithBuildTime(scene, buildingDef) {
+  function createBuildingFromDef(scene, buildingDef) {
     const T = window.THREE;
     if (!T || !scene) return null;
 
@@ -648,6 +654,16 @@
 
     ENTITIES.set(ent.id, ent);
     return ent;
+  }
+
+  // Single public entry point — dispatches on signature:
+  //   createBuildingWithBuildTime(scene, mesh, type, faction, maxHp, radius, buildTime)
+  //   createBuildingWithBuildTime(scene, buildingDef)
+  function createBuildingWithBuildTime(scene, meshOrDef, type, faction, maxHp, radius, buildTime) {
+    if (meshOrDef && meshOrDef.isObject3D) {
+      return registerBuildingFromMesh(scene, meshOrDef, type, faction, maxHp, radius, buildTime);
+    }
+    return createBuildingFromDef(scene, meshOrDef);
   }
 
   // --- INITIALIZER ---

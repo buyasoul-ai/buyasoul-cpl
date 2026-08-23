@@ -59,7 +59,7 @@
         cluster.add(mesh);
       }
 
-      const radius = 100 + Math.random() * 800;
+      const radius = 100 + Math.random() * 1400; // spread across the playable ring, not just 100-800u
       const angle = Math.random() * Math.PI * 2;
       cluster.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
 
@@ -81,15 +81,25 @@
 
   function tick(dt) {
     const t = performance.now() * 0.002;
-    for (const cluster of NODE_MESHES) {
-      if (cluster.parent) {
-        cluster.position.y = Math.sin(t + cluster.position.x) * 0.5;
-        if (window.RTSEngineCore && cluster.userData.entityId) {
-          const ent = window.RTSEngineCore.getEntity(cluster.userData.entityId);
-          if (ent) {
-            const scale = Math.max(0.1, ent.resourceAmount / 1000);
-            cluster.scale.setScalar(scale);
-          }
+    let pruned = false;
+    for (let i = NODE_MESHES.length - 1; i >= 0; i--) {
+      const cluster = NODE_MESHES[i];
+      if (!cluster.parent) { NODE_MESHES.splice(i, 1); pruned = true; continue; }
+      cluster.position.y = Math.sin(t + cluster.position.x) * 0.5;
+      if (window.RTSEngineCore && cluster.userData.entityId) {
+        const ent = window.RTSEngineCore.getEntity(cluster.userData.entityId);
+        if (ent) {
+          const scale = Math.max(0.1, ent.resourceAmount / 1000);
+          cluster.scale.setScalar(scale);
+        }
+      }
+    }
+    if (pruned && window.RTSEngineCore) {
+      // Drop entities whose node mesh was removed from the scene
+      for (const ent of window.RTSEngineCore.ENTITIES.values()) {
+        if (ent.type === 'resource' && ent.mesh && !ent.mesh.parent) {
+          ent.isDead = true;
+          window.RTSEngineCore.ENTITIES.delete(ent.id);
         }
       }
     }
@@ -111,4 +121,12 @@
   }
 
   window.RTSEconomySystem = { install, tick, RESOURCES, addResource, spendResource };
+  // Replace the RESOURCES export with a live READ-ONLY view — direct mutation
+  // from outside would bypass validation; all changes must go through
+  // addResource/spendResource. Getters keep the values live.
+  const RESOURCES_VIEW = {};
+  for (const k of Object.keys(RESOURCES)) {
+    Object.defineProperty(RESOURCES_VIEW, k, { enumerable: true, get: () => RESOURCES[k] });
+  }
+  window.RTSEconomySystem.RESOURCES = RESOURCES_VIEW;
 })();

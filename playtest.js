@@ -9,46 +9,46 @@ const path = require('path');
     const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     const page = await context.newPage();
 
-    let scriptCount = 0;
-    page.on('framenavigated', async (frame) => {
-        if (frame === page.mainFrame()) {
-            scriptCount = await page.evaluate(() => {
-                return Array.from(document.scripts).map(s => s.src || 'INLINE').length;
+    // Inject BEFORE any page script runs
+    await page.addInitScript(() => {
+        window.__caughtErrors = [];
+        window.addEventListener('error', (e) => {
+            window.__caughtErrors.push({
+                type: 'error-event',
+                message: e.message,
+                filename: e.filename,
+                lineno: e.lineno,
+                colno: e.colno
             });
-        }
+        });
+        window.addEventListener('unhandledrejection', (e) => {
+            window.__caughtErrors.push({ type: 'rejection', message: String(e.reason) });
+        });
     });
 
     page.on('console', msg => {
-        const text = msg.text();
-        if (text.includes('Unexpected token') || text.includes('ReferenceError') || msg.type() === 'error') {
-            console.log('[CONSOLE]', msg.type(), text, JSON.stringify(msg.location()));
+        const loc = msg.location();
+        if (msg.type() === 'error' || msg.text().includes('Unexpected')) {
+            console.log('[CONSOLE]', msg.type(), msg.text(), 'at', loc.url.split('/').pop() + ':' + loc.lineNumber);
         }
     });
 
-    page.on('pageerror', err => {
-        console.log('[PAGEERROR]', err.message);
-        console.log('[STACK]', err.stack);
-    });
+    await page.goto('http://localhost:3458/index.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForTimeout(6000);
 
-    await page.goto('http://localhost:3457/index.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await page.waitForTimeout(5000);
+    const errors = await page.evaluate(() => window.__caughtErrors || []);
+    console.log('=== CAUGHT ERRORS (with file/line) ===');
+    errors.forEach(e => console.log(JSON.stringify(e)));
 
-    const state = await page.evaluate(() => {
-        const loadedScripts = Array.from(document.scripts).map(s => {
-            const src = s.src || 'INLINE';
-            const ok = s.getAttribute('data-loaded');
-            return { src: src.split('/').pop(), type: s.type || 'js', loaded: !!ok };
-        });
-        return {
-            loadedScripts,
-            totalScripts: loadedScripts.length,
-            RTSEngineCore: !!window.RTSEngineCore,
-            entitiesCount: window.RTSEngineCore?.ENTITIES?.size || 0,
-            cityRendered: !!document.querySelector('canvas')
-        };
-    });
-
-    console.log('STATE:', JSON.stringify(state, null, 2));
+    const state = await page.evaluate(() => ({
+        entities: window.RTSEngineCore?.ENTITIES?.size || 0,
+        buildings: window.VoidRTSBuildings?.all ? window.VoidRTSBuildings.all().length : 'no all()',
+        fog: !!window.RTSFogOfWarInstance,
+        citizens: window.agentCitizens ? window.agentCitizens.length : 0,
+        cameraSet: !!(window.camera || window.Camera),
+        hasCanvas: !!document.querySelector('canvas')
+    }));
+    console.log('=== STATE ===', JSON.stringify(state, null, 2));
 
     await page.screenshot({ path: path.join(__dirname, 'play-test-screenshot.png') });
     await browser.close();

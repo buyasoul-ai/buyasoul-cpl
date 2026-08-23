@@ -5,8 +5,8 @@
 - **Repo:** `C:\Users\uncom\Desktop\buyasoul-cpl-fresh`
 - **GitHub:** `https://github.com/buyasoul-ai/buyasoul-cpl.git` (branch: `publish`)
 - **GitHub Pages (3D world):** `https://buyasoul-ai.github.io/buyasoul-cpl/`
-- **Local server (2D map + API):** `http://localhost:3457/`
-- **Old server (stuck):** `http://localhost:3456/` — can't kill (access denied), use 3457
+- **Local server (2D map + API):** `http://localhost:3458/`
+- **Dead ports:** 3456 stuck (can't kill, access denied); 3457 squatted by `host/genesis-host.cjs` (GSK/MCP bridge — serves no static files). Use 3458.
 - **Stack:** Three.js (r128 importmap), vanilla JS, Node.js http server
 
 ---
@@ -163,7 +163,7 @@ They are NOT random — they are the explicit planned positions from VOID-COORDI
 
 ## Server API
 
-### Base: `http://localhost:3457/`
+### Base: `http://localhost:3458/`
 
 | Method | Endpoint | Body | Response |
 |--------|----------|------|----------|
@@ -192,10 +192,10 @@ They are NOT random — they are the explicit planned positions from VOID-COORDI
 
 1. **NEVER touch CPL code** — `index.html`, city scene, lights, fog, sky, bloom
 2. **NEVER place anything inside 0–360u** (no-build zone)
-3. **Always check the map** (`http://localhost:3457/`) before placing new content
+3. **Always check the map** (`http://localhost:3458/`) before placing new content
 4. **Coordinates must match** between `void-map.html` WORLDS and `void-population.js` WORLD_COORDINATES
 5. **3D world = GitHub Pages** — changes to `void-population.js` need commit + push to `origin/publish`
-6. **2D map = local server** — `void-map.html` runs on `localhost:3457` via `node server.js`
+6. **2D map = local server** — `void-map.html` runs on `localhost:3458` via `node server.js`
 7. **Lost Mechanics cities** are indices 0–2 (the bible types)
 8. **Lost Worlds** are indices 3–12 (the 10 original types)
 9. **New City** is index 13 (CPL clone, LM bible randomized)
@@ -206,7 +206,7 @@ They are NOT random — they are the explicit planned positions from VOID-COORDI
 
 ## THE WORKFLOW (Process a Task from Map to Live)
 
-**Step 1:** User clicks task on map at `http://localhost:3457/` → saves to `void-tasks-live.json`
+**Step 1:** User clicks task on map at `http://localhost:3458/` → saves to `void-tasks-live.json`
 
 **Step 2:** Agent reads `void-tasks-live.json` — understands name, position, description. **Verifies position is outside 0–360u no-build zone.**
 
@@ -227,7 +227,7 @@ git commit -m "Describe what was built and where"
 git push origin publish
 ```
 
-**Step 7:** Verify — 3D world at `https://buyasoul-ai.github.io/buyasoul-cpl/` updates in ~1-2 min. 2D map at `http://localhost:3457/` updates immediately.
+**Step 7:** Verify — 3D world at `https://buyasoul-ai.github.io/buyasoul-cpl/` updates in ~1-2 min. 2D map at `http://localhost:3458/` updates immediately.
 
 ---
 

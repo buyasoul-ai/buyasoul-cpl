@@ -17,7 +17,10 @@
 
     var STATE = {
       GATHER: 'gather', BUILD: 'build', TRADE: 'trade', PATROL: 'patrol',
-      SOCIALIZE: 'socialize', FLEE: 'flee', IDLE: 'idle', PURSUE: 'pursue', THREATEN: 'threaten'
+      SOCIALIZE: 'socialize', FLEE: 'flee', IDLE: 'idle', PURSUE: 'pursue', THREATEN: 'threaten',
+      // Daily-life states (consumed by the time-aware planner; anchors come from
+      // daily-life-loop.js via ctx.work / ctx.home / ctx.social / ctx.profession)
+      WORK: 'work', SLEEP: 'sleep', COMMUTE: 'commute', SOCIAL_HANGOUT: 'social-hangout'
     };
 
     var behaviors = {};
@@ -182,15 +185,120 @@
       }
     });
 
-    // Planner: goal/utility selection, gated by the Trust Ledger band (P-A).
+    // ── WORK: go to the work anchor, then stand and emit agent:work ──
+    registerBehavior(STATE.WORK, {
+      tick: function (ctx, dt) {
+        var w = ctx.work || null;
+        if (!w) {
+          // No anchor assigned (daily-life-loop off): degrade to gather drift.
+          if (!ctx.target || dist(ctx.target.x, ctx.target.z, ctx.pos.x, ctx.pos.z) < 3)
+            ctx.target = { x: (Math.random() - 0.5) * 70, z: (Math.random() - 0.5) * 70 };
+          return moveTo(ctx.target.x, ctx.target.z, 2.4);
+        }
+        var intent = moveTo(w.x, w.z, 2.0);
+        if (dist(w.x, w.z, ctx.pos.x, ctx.pos.z) < 4) {
+          // At the work site: work in place (occasional emit + a tiny drift so
+          // the body visibly "labors" instead of standing frozen).
+          if (Math.random() < 0.02) {
+            intent.emit = [{ type: 'agent:work', payload: { id: ctx.id, at: w, profession: ctx.profession || null } }];
+          }
+          if (Math.random() < 0.01 && Genesis.EventBridge && typeof Genesis.EventBridge.emit === 'function') {
+            Genesis.EventBridge.emit('agent:work', { id: ctx.id, name: ctx.name, profession: ctx.profession || null });
+          }
+        }
+        return intent;
+      }
+    });
+
+    // ── COMMUTE: walk from home to work (no stationing) ──
+    registerBehavior(STATE.COMMUTE, {
+      tick: function (ctx, dt) {
+        var w = ctx.work || ctx.social || null;
+        if (!w) {
+          if (Math.random() < 0.01) return emit('agent:commute', { id: ctx.id });
+          return null;
+        }
+        return moveTo(w.x, w.z, 2.6);
+      }
+    });
+
+    // ── SLEEP: return home, then dim (no movement) + occasional Zzz ──
+    registerBehavior(STATE.SLEEP, {
+      tick: function (ctx, dt) {
+        var h = ctx.home || null;
+        if (!h) {
+          // No home anchor: curl up in place.
+          if (Math.random() < 0.01) return emit('agent:sleep', { id: ctx.id });
+          return null;
+        }
+        if (dist(h.x, h.z, ctx.pos.x, ctx.pos.z) > 3) {
+          return moveTo(h.x, h.z, 2.0);
+        }
+        // Home: asleep. Signal the body to dim (visual only) + Zzz.
+        if (typeof Genesis !== 'undefined' && Genesis.EventBridge && typeof Genesis.EventBridge.emit === 'function') {
+          if (Math.random() < 0.01) Genesis.EventBridge.emit('agent:sleep', { id: ctx.id, name: ctx.name });
+        }
+        if (Math.random() < 0.02) return emit('agent:sleep', { id: ctx.id });
+        return null;
+      }
+    });
+
+    // ── SOCIAL_HANGOUT: go to the social district and mingle (no player needed) ──
+    registerBehavior(STATE.SOCIAL_HANGOUT, {
+      tick: function (ctx, dt) {
+        var s = ctx.social || ctx.home || null;
+        if (!s) {
+          if (Math.random() < 0.01) return emit('agent:socialize', { id: ctx.id });
+          return null;
+        }
+        var intent = moveTo(s.x, s.z, 2.2);
+        if (dist(s.x, s.z, ctx.pos.x, ctx.pos.z) < 4 && Math.random() < 0.02) {
+          intent.emit = [{ type: 'agent:socialize', payload: { id: ctx.id, at: s } }];
+        }
+        return intent;
+      }
+    });
+
+    // Daily schedule by hour of the game-day (single source of truth for both the
+    // planner and the daily-life-loop labeler):
+    //   0-6    sleep (nights are for rest)
+    //   6-8    wake + commute to work
+    //   8-12   work
+    //   12-13  lunch break (social district)
+    //   13-18  work
+    //   18-22  dusk — socialize at the social district / trade with visitor
+    //   22-24  head home, sleep
+    function scheduleFor(ctx) {
+      var t = (ctx && typeof ctx.time === 'number') ? ctx.time : null;
+      if (t === null || typeof t !== 'number') return null;
+      if (t < 6 || t >= 22) return STATE.SLEEP;
+      if (t >= 6 && t < 8) return STATE.COMMUTE;
+      if (t >= 8 && t < 12) return STATE.WORK;
+      if (t >= 12 && t < 13) return STATE.SOCIAL_HANGOUT;
+      if (t >= 13 && t < 18) return STATE.WORK;
+      return STATE.SOCIAL_HANGOUT; // 18-22 dusk
+    }
+
+    // Planner: time-aware daily life first, trust-gated social/defense second.
+    // The global city clock (window.GSKCityClock, from city-clock.js) owns the
+    // TIME; the Trust Ledger band still overrides for fleeing/befriending.
     function planFor(ctx) {
+      // Trust overrides trump the clock entirely (a betrayed citizen flees at noon).
       if (ctx.band === 'HOSTILE') return STATE.FLEE;
       if (ctx.band === 'FRIEND') return ctx.playerNear ? STATE.SOCIALIZE : STATE.TRADE;
-      // NEUTRAL: rotate goals on a 12s cadence so the city visibly self-organizes.
-      var goals = [STATE.GATHER, STATE.BUILD, STATE.TRADE, STATE.PATROL];
-      var pick = goals[Math.floor((ctx.time / 12) % goals.length)];
-      if (pick === STATE.TRADE && !ctx.playerPos) pick = STATE.PATROL;
-      return pick;
+
+      var clock = (typeof window !== 'undefined' && window.GSKCityClock) ? window.GSKCityClock : null;
+      var t = (clock && typeof clock.get === 'function') ? clock.get().time : null;
+
+      // No clock (daily-life off): fall back to the legacy 12s goal rotation.
+      if (t === null || typeof t !== 'number') {
+        var goals = [STATE.GATHER, STATE.BUILD, STATE.TRADE, STATE.PATROL];
+        var pick = goals[Math.floor((ctx.time / 12) % goals.length)];
+        if (pick === STATE.TRADE && !ctx.playerPos) pick = STATE.PATROL;
+        return pick;
+      }
+      var sched = scheduleFor({ time: t });
+      return sched || STATE.PATROL;
     }
 
     var BehaviorAttacher = {
@@ -198,6 +306,7 @@
       registerBehavior: registerBehavior,
       getBehavior: getBehavior,
       planFor: planFor,
+      scheduleFor: scheduleFor,
       summary: function () { return { behaviors: Object.keys(behaviors) }; }
     };
 

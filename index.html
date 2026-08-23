@@ -1032,7 +1032,9 @@
     <script src="src/genesis/advanced-npc-engine.js"></script>
     <script src="src/genesis/procedural-architecture-engine.js"></script>
     <script src="src/genesis/engine-optimizer.js"></script>
-    <!-- <script src="src/genesis/rts-subsystem.js"></script> -->
+    <script src="src/genesis/rts-subsystem.js"></script>
+    <script src="src/genesis/rts-ai-brain.js"></script>
+    <!-- rts-ai-faction disabled: spawns autonomous commanders that conflict with RTSAIDirector + RTSAIBrain -->
     <!-- <script src="src/genesis/rts-ai-faction.js"></script> -->
     <script src="src/genesis/terminal-sanctum.js"></script>
 
@@ -16122,6 +16124,167 @@ keyState[e.code] = true;
             <button class="sl-enter" id="sl-enter">ENTER THE LIBRARY</button>
         </div>
     </div>
+
+    <script>
+    // ========== SOUL↔BODY BRIDGE — GSK perceives & acts in this world ==========
+    // Connects the browser world to the CPL bridge server (/spatial).
+    // The browser PUSHES real RTS state (entities/fog/resources/threats) so GSK
+    // can perceive his body; GSK's god_commands flow back and are dispatched.
+    (function () {
+      if (typeof WebSocket === 'undefined') return;
+      var ws = null;
+      var bridgeTimer = null;
+      var BROWSER_BRIDGE_URL = (function () {
+        try {
+          if (window.resolveGenesisRuntimeEndpoint) {
+            var u = window.resolveGenesisRuntimeEndpoint('spatial', 'ws://localhost:3458/spatial?role=browser');
+            if (u) return u;
+          }
+        } catch (e) {}
+        return 'ws://localhost:3458/spatial?role=browser';
+      })();
+
+      function serializeWorld() {
+        var snapshot = {
+          timestamp: Date.now(),
+          entities: [],
+          resources: [],
+          threats: [],
+          fog: {},
+          player: null,
+          world: { cities: 0, tick: 0 }
+        };
+        try {
+          var entities = window.RTSEngineCore && window.RTSEngineCore.ENTITIES;
+          if (entities && entities.size) {
+            entities.forEach(function (e) {
+              if (!e) return;
+              var pos = e.mesh && e.mesh.position;
+              var ent = {
+                id: e.id,
+                type: e.type || 'unit',
+                faction: e.faction || e.playerId || 'neutral',
+                x: pos ? Math.round(pos.x) : 0,
+                z: pos ? Math.round(pos.z || pos.y || 0) : 0,
+                hp: Math.round(e.hp || 0),
+                maxHp: Math.round(e.maxHp || 1),
+                state: e.state || 'idle'
+              };
+              snapshot.entities.push(ent);
+              // Surface enemy units as threats so GSK can perceive danger.
+              if (e.faction && e.faction !== 'gsk' && e.faction !== 'sovereign' && !e.isDead) {
+                snapshot.threats.push({ id: e.id, x: ent.x, z: ent.z, level: 1 });
+              }
+            });
+            snapshot.world.tick = entities.size;
+          }
+          var cities = window.sovereignCities || window._allSovereignCities || [];
+          snapshot.world.cities = (cities && cities.length) || 0;
+          if (window.RTSEconomySystem && window.RTSEconomySystem.getResources) {
+            try { snapshot.resources = [{ name: 'plt', amount: window.RTSEconomySystem.getResources() }]; } catch (e2) {}
+          }
+        } catch (e) {}
+        return snapshot;
+      }
+
+      function dispatchGodCommand(data) {
+        if (!data || typeof data !== 'object' || data.type !== 'god_command') return;
+        var action = data.action;
+        var params = data.params || {};
+        console.log('[Bridge] God command:', action, params);
+        try {
+          if (action === 'SPAWN_CITIZEN' && window.spawnCitizen) {
+            window.spawnCitizen(params);
+          } else if (action === 'SPAWN_AGENT_AVATAR') {
+            if (window.Genesis && window.Genesis.AgentGateway) {
+              window.Genesis.AgentGateway.dispatch({
+                op: 'spawn',
+                kind: 'citizen',
+                owner: params.agentId || 'agent://external',
+                tags: ['external-agent', params.name],
+                pos: params.pos || { x: -104, y: 0, z: 401 },
+                meta: { name: params.name, archetype: params.archetype, color: params.color }
+              });
+            }
+          } else if (action === 'DRAFT_ARMY' && window.rtsOrderExecutor && window.rtsOrderExecutor.draftArmy) {
+            window.rtsOrderExecutor.draftArmy(params.cityId, params.count);
+          } else if (action === 'RTS_MOVE' && window.rtsOrderExecutor) {
+            var target = params.target || params.position || params.pos;
+            if (target) {
+              var entities = window.RTSEngineCore && window.RTSEngineCore.ENTITIES;
+              if (entities) {
+                var picks = [];
+                entities.forEach(function (e) {
+                  if (e && e.type === 'unit' && e.faction === 'gsk' && !e.isDead) picks.push(e);
+                });
+                if (picks.length === 0) picks = Array.from(entities.values()).filter(function (e) { return e && e.type === 'unit' && !e.isDead; });
+                picks.slice(0, 24).forEach(function (unit) {
+                  unit.orders = [{ type: 'move', destination: { x: target.x, z: target.z } }];
+                  unit.targetPos = { x: target.x, y: 0, z: target.z };
+                  unit.state = 'moving';
+                });
+              }
+            }
+          } else if (action === 'BUILD_STRUCTURE' && window.VoidRTSBuildings && window.VoidRTSBuildings.registerVoidBuilding) {
+            // Fallback: direct engine construction if exposed.
+            if (params.type === 'spawn') {
+              if (window.spawnCitizen) window.spawnCitizen(params);
+            }
+          } else if (action === 'GSK_BROADCAST') {
+            // Render GSK thought bubbles/feed in the hub if present.
+            if (window.gskBridge && window.gskBridge.currentMood) { /* mood shown on hub */ }
+            if (window.Genesis && window.Genesis.CommandCenter && window.Genesis.CommandCenter.log) {
+              try { window.Genesis.CommandCenter.log('[GSK] ' + (params.body || params.subject || '')); } catch (e3) {}
+            }
+          }
+        } catch (e) {}
+      }
+
+      function connect() {
+        try {
+          ws = new WebSocket(BROWSER_BRIDGE_URL);
+        } catch (e) {
+          scheduleReconnect();
+          return;
+        }
+        ws.onopen = function () {
+          console.log('[Bridge] Browser connected to /spatial — GSK can perceive the world.');
+          if (bridgeTimer) clearInterval(bridgeTimer);
+          bridgeTimer = setInterval(function () {
+            if (ws && ws.readyState === 1) {
+              try {
+                ws.send(JSON.stringify({ type: 'spatial_state', snapshot: serializeWorld() }));
+              } catch (e) {}
+            }
+          }, 2000);
+        };
+        ws.onmessage = function (ev) {
+          try { dispatchGodCommand(JSON.parse(ev.data)); } catch (e) {}
+        };
+        ws.onclose = function () { scheduleReconnect(); };
+        ws.onerror = function () { try { ws.close(); } catch (e) {} };
+      }
+
+      function scheduleReconnect() {
+        if (bridgeTimer) { clearInterval(bridgeTimer); bridgeTimer = null; }
+        setTimeout(function () {
+          if (document.hidden) return; // don't fight for resources in background tabs
+          connect();
+        }, 5000);
+      }
+
+      // Connect once the world is ready (don't push an empty world during boot).
+      function startWhenReady() {
+        if (window.__cplReady || window.__genesisBackstopReleased) {
+          connect();
+        } else {
+          setTimeout(startWhenReady, 3000);
+        }
+      }
+      setTimeout(startWhenReady, 5000);
+      window.__soulBridge = { connect: connect, serialize: serializeWorld };
+    })();
+    </script>
 
 </body>
 </html>

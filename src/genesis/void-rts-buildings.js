@@ -75,6 +75,7 @@
 
   // Production queue (AoE barracks / stable / siege)
   function enqueueProduction(buildingOrId, unitDef) {
+    if (!unitDef || !unitDef.id) return false; // defs without id break spawn events
     const building = (typeof buildingOrId === 'number') ? getBuilding(buildingOrId) : buildingOrId;
     if (!building || building.productionQueue.length >= building.productionMax) return false;
     if (!unitDef.cost) unitDef.cost = {};
@@ -107,7 +108,14 @@
   // Tech tree (AoE-style upgrades)
   const TECH_TREE = {
     masonry: { name: 'Masonry', cost: { profit: 200, aether: 50 }, effect: (b) => { b.armor += 2; b.maxHp += 500; b.hp += 500; } },
-    ballistics: { name: 'Ballistics', cost: { profit: 300, aether: 100 }, effect: (b) => { /* global projectile accuracy */ } },
+    ballistics: {
+      name: 'Ballistics', cost: { profit: 300, aether: 100 },
+      effect: (b) => {
+        // Real effect: global marker for combat systems + turret damage boost
+        window.__BALLISTICS_RESEARCHED = true;
+        if (b.isTurret && b.attackDamage) b.attackDamage = Math.round(b.attackDamage * 1.25);
+      }
+    },
     feudalAge: { name: 'Feudal Age', cost: { profit: 800, love: 200 }, effect: (b) => { b.maxHp += 1000; b.hp += 1000; } },
   };
 
@@ -126,7 +134,9 @@
     if (!building || !building.underConstruction) return;
     var rate = 100 / building.buildTimeTotal;
     building.buildProgress = Math.min(100, building.buildProgress + rate * dt);
-    building.hp = Math.floor((building.buildProgress / 100) * building.maxHp);
+    // Progress never heals damage taken during construction — no free-heal exploit
+    var targetHp = Math.floor((building.buildProgress / 100) * building.maxHp);
+    if (targetHp > building.hp) building.hp = targetHp;
     if (building.buildProgress >= 100) {
       building.underConstruction = false;
       building.hp = building.maxHp;

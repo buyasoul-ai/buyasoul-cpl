@@ -60,7 +60,8 @@
     
     const hp = isAlien ? 80 : 130;
     const ent = window.RTSEngineCore.registerEntity(mesh, 'unit', factionId, hp, 1.2);
-    ent.speed = isAlien ? 5.5 : 3.8;
+    ent.baseSpeed = isAlien ? 5.5 : 3.8;
+    ent.speed = ent.baseSpeed * _unitSpeedMult;
     
     factionData.idleUnits.add(ent.id);
     console.log(`[RTS AI Director] Spawned ${factionId} unit ${ent.id}`);
@@ -137,7 +138,17 @@
   function setPacing(opts) {
     if (!opts) return;
     if (typeof opts.resourceRate === 'number') _resRate = opts.resourceRate;
-    if (typeof opts.unitSpeed === 'number') _unitSpeedMult = opts.unitSpeed;
+    if (typeof opts.unitSpeed === 'number' && opts.unitSpeed !== _unitSpeedMult) {
+      _unitSpeedMult = opts.unitSpeed;
+      // Re-apply to every living AI unit already on the field
+      if (window.RTSEngineCore) {
+        for (const ent of window.RTSEngineCore.ENTITIES.values()) {
+          if (!ent.isDead && ent.type === 'unit' && ent.baseSpeed && FACTIONS[ent.faction]) {
+            ent.speed = ent.baseSpeed * _unitSpeedMult;
+          }
+        }
+      }
+    }
     for (const id of Object.keys(FACTIONS)) {
       const f = FACTIONS[id];
       if (typeof opts.spawnCost === 'number') f.spawnCost = opts.spawnCost;
