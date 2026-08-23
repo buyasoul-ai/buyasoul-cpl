@@ -4,9 +4,10 @@
 - **Repo:** `C:\Users\uncom\Desktop\buyasoul-cpl-fresh`
 - **GitHub:** `https://github.com/buyasoul-ai/buyasoul-cpl.git` (branch: `publish`)
 - **GitHub Pages (3D world):** `https://buyasoul-ai.github.io/buyasoul-cpl/`
+- **Mirror (dual-home):** `uncommonpope-png/WORKBENCH` → `cpl/world/` — snapshot of this repo's `publish` branch. After every push to origin, mirror the same tree into WORKBENCH master. The WORKBENCH `cpl/` host-bridge files (genesis-host.cjs etc.) are a separate service and must not be replaced.
 - **Local server (2D map + API):** `http://localhost:3458/`
 - **Stack:** Three.js r160, vanilla JS, Node.js http
-- **Modules:** 148 files in `src/genesis/` (24 worlds, 21 sovereign cities, 13 RTS modules, city clock, daily life loop)
+- **Modules:** 148 files in `src/genesis/` (24 worlds, 21 sovereign cities, RTS modules incl. fog/subsystem/AI brain, city clock, daily life loop)
 
 ---
 
