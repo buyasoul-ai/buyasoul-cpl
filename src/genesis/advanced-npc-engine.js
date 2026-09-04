@@ -249,7 +249,7 @@
 
     // Register right-click command with the unified input router
     if (window.RTSInputRouter) {
-      window.RTSInputRouter.registerRightClick(60, function(ctx) {
+      window.RTSInputRouter.registerRightClick(5, function(ctx) {
         if (SELECTED_ENTITIES.size === 0) return false;
         if (!ctx.point) return false;
         if (window.RTSEngineCore) {
@@ -264,7 +264,7 @@
         return true; // consumed
       });
       // Single-click NPC selection
-      window.RTSInputRouter.registerLeftClick(60, function(ctx) {
+      window.RTSInputRouter.registerLeftClick(5, function(ctx) {
         if (!ctx.hits || ctx.hits.length === 0) {
           if (!ctx.shiftKey) clearSelection();
           return false;
@@ -273,8 +273,15 @@
         for (const hit of ctx.hits) {
           let obj = hit.object;
           while (obj) {
-            // Match NPC entities (entityId set) but skip RTS units (_rtsUnit set)
-            if (obj.userData && obj.userData.entityId && !obj._rtsUnit && !obj.userData.isWarship) { hitNPC = obj; break; }
+            // Match NPC entities (entityId set) but skip RTS units (_rtsUnit set) 
+            // and RTSEngineCore units (faction is voidCovenant/imperium/bioHive, not neutral)
+            const entId = obj.userData && obj.userData.entityId;
+            if (entId && !obj._rtsUnit && !obj.userData.isWarship) {
+              const ent = window.RTSEngineCore ? window.RTSEngineCore.getEntity(entId) : null;
+              // Skip RTS combat units (voidCovenant/imperium/bioHive) — let RTS handlers deal with them
+              if (ent && ent.type === 'unit' && ['voidCovenant','imperium','bioHive'].includes(ent.faction)) continue;
+              hitNPC = obj; break;
+            }
             obj = obj.parent;
           }
           if (hitNPC) break;

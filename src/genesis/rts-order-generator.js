@@ -334,7 +334,7 @@
       const hits = this._raycast(clientX, clientY);
       const target = hits.find(h => {
         const ent = this._getEntityFromObject(h.object, this.ctx.entities);
-        return ent && ent.type === 'building' && ent.hp < ent.maxHp && ent.faction === 'player';
+        return ent && ent.type === 'building' && ent.hp < ent.maxHp && ent.faction === 'voidCovenant';
       });
       if (!target) return false;
 
@@ -389,7 +389,7 @@
       if (!shiftKey) selection.clear();
 
       for (const [id, entity] of entities) {
-        if (entity.type !== 'unit' || entity.isDead || entity.faction !== 'player') continue;
+        if (entity.type !== 'unit' || entity.isDead || entity.faction !== 'voidCovenant') continue;
         if (!entity.mesh) continue;
 
         const screenPos = entity.mesh.position.clone().project(camera);
@@ -421,7 +421,7 @@
 
       selection.clear();
       for (const [id, ent] of entities) {
-        if (ent.type === 'unit' && !ent.isDead && ent.faction === 'player' &&
+        if (ent.type === 'unit' && !ent.isDead && ent.faction === 'voidCovenant' &&
             (ent.defId === typeKey || ent.type === typeKey)) {
           selection.add(id);
         }

@@ -1,0 +1,4 @@
+GOTO FAIL page.goto: Timeout 30000ms exceeded.
+Call log:
+[2m  - navigating to "https://buyasoul-ai.github.io/buyasoul-cpl/", waiting until "domcontentloaded"[22m
+

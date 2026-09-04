@@ -96,7 +96,7 @@
 
       for (const [id, ent] of entities) {
         if (ent.type !== 'unit' || ent.isDead) continue;
-        if (ent.faction !== 'player') continue;
+        if (ent.faction !== 'voidCovenant') continue;
         if (!ent.mesh) continue;
 
         // Project to screen
@@ -128,7 +128,7 @@
 
       this.ids.clear();
       for (const [id, ent] of entities) {
-        if (ent.type !== 'unit' || ent.isDead || ent.faction !== 'player') continue;
+        if (ent.type !== 'unit' || ent.isDead || ent.faction !== 'voidCovenant') continue;
         const entTypeKey = ent.defId || ent.unitType || ent.type;
         if (entTypeKey !== typeKey) continue;
         if (!ent.mesh) continue;
@@ -377,7 +377,7 @@
 
         // Color by faction
         const mat = ring.material;
-        const color = (ent.faction === 'player') ? CFG.SELECTION_RING_COLOR : 0xff4444;
+        const color = (ent.faction === 'voidCovenant') ? CFG.SELECTION_RING_COLOR : 0xff4444;
         if (mat.color.getHex() !== color) mat.color.setHex(color);
       }
 

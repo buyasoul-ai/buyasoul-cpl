@@ -159,7 +159,7 @@
       clearSelection();
 
       for (const unit of allUnits) {
-        if (!unit.mesh || unit.faction !== 'player') continue;
+        if (!unit.mesh || unit.faction !== 'voidCovenant') continue;
         const screenPos = unit.mesh.position.clone().project(camera);
         const sx = (screenPos.x + 1) / 2 * window.innerWidth;
         const sy = (-screenPos.y + 1) / 2 * window.innerHeight;
@@ -201,7 +201,7 @@
     const ring = new T.Mesh(
       new T.RingGeometry(1.5, 2, 16),
       new T.MeshBasicMaterial({
-        color: unit.faction === 'player' ? RTS_CFG.UNIT_RING_COLOR : RTS_CFG.ENEMY_RING_COLOR,
+        color: unit.faction === 'voidCovenant' ? RTS_CFG.UNIT_RING_COLOR : RTS_CFG.ENEMY_RING_COLOR,
         transparent: true, opacity: 0.6, side: T.DoubleSide
       })
     );
@@ -271,7 +271,7 @@
     if (!target) return;
 
     // Check if right-clicked on an enemy unit
-    const enemyMeshes = allUnits.filter(u => u.mesh && u.faction !== 'player').map(u => u.mesh);
+    const enemyMeshes = allUnits.filter(u => u.mesh && u.faction !== 'voidCovenant').map(u => u.mesh);
     const enemyHits = raycaster.intersectObjects(enemyMeshes, true);
 
     let command;
@@ -536,7 +536,7 @@
     hudElement.id = 'rts-hud';
     Object.assign(hudElement.style, {
       position: 'fixed',
-      bottom: '10px',
+      top: '72px',
       left: '50%',
       transform: 'translateX(-50%)',
       backgroundColor: 'rgba(0, 0, 0, 0.75)',
@@ -546,7 +546,7 @@
       color: '#00ff88',
       fontFamily: 'monospace',
       fontSize: '13px',
-      zIndex: '8999',
+      zIndex: '107',
       display: 'none',
       minWidth: '200px',
       textAlign: 'center',
@@ -633,7 +633,7 @@
         const minY = ctx.rect.top, maxY = ctx.rect.bottom;
         if (!ctx.shiftKey) clearSelection();
         for (const unit of allUnits) {
-          if (!unit.mesh || unit.faction !== 'player') continue;
+          if (!unit.mesh || unit.faction !== 'voidCovenant') continue;
           const screenPos = unit.mesh.position.clone().project(camera);
           const sx = (screenPos.x + 1) / 2 * window.innerWidth;
           const sy = (-screenPos.y + 1) / 2 * window.innerHeight;
@@ -650,7 +650,7 @@
         const targetPos = ctx.point;
         if (!targetPos) return false;
         let command;
-        const enemyMeshes = allUnits.filter(u => u.mesh && u.faction !== 'player').map(u => u.mesh);
+        const enemyMeshes = allUnits.filter(u => u.mesh && u.faction !== 'voidCovenant').map(u => u.mesh);
         if (ctx.hits && ctx.hits.length > 0) {
           let hitObj = ctx.hits[0].object;
           while (hitObj && !hitObj._rtsUnit) hitObj = hitObj.parent;
@@ -703,7 +703,7 @@
     const unit = {
       mesh,
       def: { ...def },
-      faction: faction || 'player',
+      faction: faction || 'voidCovenant',
       hp: def.hp,
       order: null,
       aggressive: true,

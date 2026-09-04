@@ -2933,7 +2933,7 @@ export function install(Genesis) {
 
     // Ship userData with full targeting/combat stats
     g.userData = {
-      faction: 'player', state: 'patrol', target: null,
+      faction: 'voidCovenant', state: 'patrol', target: null,
       orbitAngle: 0, orbitRadius: 380 + Math.random() * 140, orbitHeight: (Math.random() - 0.5) * 80,
       orbitSpeed: (0.1 + Math.random() * 0.15),
       speed: typeDef.speed, hp: typeDef.hp, maxHp: typeDef.maxHp,
