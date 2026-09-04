@@ -190,7 +190,7 @@
     const def = BUILD_DEFS[defId];
     if (!def) return;
     cancelBuild();
-    activeBuild = { defId, def, ghost: makeGhost(def) };
+    activeBuild = { defId, def, ghost: makeGhost(def), rotation: 0, valid: false };
     console.log('[RTSBuilder] Build mode:', def.name);
     document.body.style.cursor = 'crosshair';
   }
@@ -346,8 +346,19 @@
       base.position.y = 2;
     }
 
+    // ─── Construction progress bar (floating above building) ────────────
+    const barGeo = new T.PlaneGeometry(def.radius * 2, 0.4);
+    const barMat = new T.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.8, depthWrite: false, side: T.DoubleSide });
+    const progBar = new T.Mesh(barGeo, barMat);
+    progBar.position.y = def.radius + 2;
+    progBar.rotation.x = -Math.PI / 2;
+    progBar.userData.isBuildProgress = true;
+    group.add(progBar);
+
     group.position.set(x, 0, z);
     group.userData.isPlayerBuilding = true;
+    group.userData.buildProgress = 0;
+    group.userData.buildMax = buildTime;
     SCENE.add(group);
 
     // Register with RTSEngineCore
@@ -357,6 +368,12 @@
       if (entity) {
         entity.isPlayerBuilt = true;
         entity.isTownHall = (defId === 'townhall');
+        // Construction progress: starts at 0, builds up over time
+        const buildTime = (defId === 'townhall') ? 10 : (defId === 'turret') ? 6 : (defId === 'barracks') ? 8 : (defId === 'refinery') ? 8 : 4;
+        entity.buildProgress = 0;       // 0 = placed, 1 = complete
+        entity.buildMaxProgress = buildTime;
+        entity.buildTime = buildTime;
+        entity.isUnderConstruction = true;
         if (def.attackRange) {
           entity.attackRange = def.attackRange;
           entity.attackDamage = def.attackDamage;
@@ -400,6 +417,11 @@
   }
 
   function handleKey(key, e, ctx) {
+    // B toggles build menu even when NOT in build mode
+    if (key === 'b' && !activeBuild) {
+      toggleMenu();
+      return true;
+    }
     if (!activeBuild) return false;
     if (key === 'escape') {
       cancelBuild();
@@ -407,6 +429,14 @@
     }
     if (key === 'b') {
       if (buildMenu) buildMenu.style.display = buildMenu.style.display === 'none' ? 'flex' : 'none';
+      return true;
+    }
+    // R rotates the ghost hologram
+    if (key === 'r') {
+      activeBuild.rotation = (activeBuild.rotation || 0) + Math.PI / 4;
+      const ghost = activeBuild.ghost;
+      if (ghost) ghost.rotation.y = activeBuild.rotation;
+      console.log('[RTSBuilder] Ghost rotated', Math.round(activeBuild.rotation / Math.PI * 4) * 45 + '°');
       return true;
     }
     return false;
@@ -417,11 +447,51 @@
   }
 
   // ─── TICK ───────────────────────────────────────────────────────────
-  function tick() {
-    if (!activeBuild) return;
-    // Follow cursor via last raycast point
-    const pt = window.__godforgeLastRaycastPoint;
-    if (pt) updateGhost(pt);
+  function tick(dt) {
+    if (activeBuild) {
+      const pt = window.__godforgeLastRaycastPoint;
+      if (pt) updateGhost(pt);
+    }
+    // Construction progress for buildings under construction
+    for (let i = BUILT.length - 1; i >= 0; i--) {
+      const b = BUILT[i];
+      if (!b.entity || b.entity.isDead) continue;
+      if (!b.entity.isUnderConstruction) continue;
+      if (!b.mesh) continue;
+
+      b.entity.buildProgress += dt;
+      b.mesh.userData.buildProgress = b.entity.buildProgress;
+
+      // Update progress bar width
+      const bar = b.mesh.children.find(c => c.userData && c.userData.isBuildProgress);
+      if (bar) {
+        const pct = Math.min(1, b.entity.buildProgress / b.entity.buildMaxProgress);
+        bar.scale.set(pct, 1, 1);
+        bar.material.opacity = pct < 1 ? 0.8 : 0;
+
+        // Visual: building fades in as it's constructed
+        b.mesh.traverse(c => {
+          if (c.isMesh && !c.userData.isBuildProgress) {
+            c.material.transparent = true;
+            c.material.opacity = 0.3 + 0.7 * pct;
+          }
+        });
+
+        if (b.entity.buildProgress >= b.entity.buildMaxProgress) {
+          b.entity.isUnderConstruction = false;
+          b.entity.buildProgress = b.entity.buildMaxProgress;
+          b.mesh.traverse(c => {
+            if (c.isMesh && !c.userData.isBuildProgress) {
+              c.material.transparent = false;
+              c.material.opacity = 1;
+            }
+          });
+          if (bar) bar.material.opacity = 0;
+          console.log('[RTSBuilder] Construction complete:', b.defId);
+        }
+      }
+    }
+  }
   }
 
   // ─── INSTALL ────────────────────────────────────────────────────────
