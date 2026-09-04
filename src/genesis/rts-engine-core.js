@@ -697,26 +697,31 @@
     applyFogVisibility();
   }
 
-  function applyFogVisibility() {
-    var fog = window.RTSFogOfWarInstance;
-    if (!fog) return;
-    var playerIndex = 0;
-    for (var ent of ENTITIES.values()) {
-      if (ent.isDead || !ent.mesh) continue;
-      var pos = ent.mesh.position;
-      if (fog.canSee(playerIndex, ent)) {
-        ent.mesh.visible = true;
-        ent.mesh.traverse(function(c) {
-          if (c.isMesh && c.material) { c.material.transparent = true; c.material.opacity = 1.0; }
-        });
-      } else if (fog.isExplored(playerIndex, pos.x, pos.z)) {
-        ent.mesh.visible = true;
-        ent.mesh.traverse(function(c) {
-          if (c.isMesh && c.material) { c.material.transparent = true; c.material.opacity = 0.3; }
-        });
-      } else {
-        ent.mesh.visible = false;
-      }
+   function applyFogVisibility() {
+     var fog = window.RTSFogOfWarInstance;
+     if (!fog) return;
+     var playerIndex = 0;
+     for (var ent of ENTITIES.values()) {
+       if (ent.isDead || !ent.mesh) continue;
+       // Buildings (city centers, town halls) are permanent landmarks — always visible
+       if (ent.type === 'building') {
+         ent.mesh.visible = true;
+         continue;
+       }
+       var pos = ent.mesh.position;
+       if (fog.canSee(playerIndex, ent)) {
+         ent.mesh.visible = true;
+         ent.mesh.traverse(function(c) {
+           if (c.isMesh && c.material) { c.material.transparent = true; c.material.opacity = 1.0; }
+         });
+       } else if (fog.isExplored(playerIndex, pos.x, pos.z)) {
+         ent.mesh.visible = true;
+         ent.mesh.traverse(function(c) {
+           if (c.isMesh && c.material) { c.material.transparent = true; c.material.opacity = 0.3; }
+         });
+       } else {
+         ent.mesh.visible = false;
+       }
     }
   }
 

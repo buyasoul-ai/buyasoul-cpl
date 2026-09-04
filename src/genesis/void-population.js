@@ -3551,6 +3551,21 @@ export function install(Genesis) {
       try {
         window.RTSFogOfWarInstance.tick(0.05);
         window.RTSFogOfWarInstance.reveal(0, -104, 401, 140); // PLAYER_HOME start area
+        // Reveal all city/world positions so landmarks are visible on the fog grid
+        for (let i = 0; i < worlds.length; i++) {
+          const w = worlds[i];
+          if (w && w.position) {
+            window.RTSFogOfWarInstance.reveal(0, w.position.x, w.position.z, 80);
+          }
+        }
+        // Reveal AI director base positions (imperium/bioHive home bases)
+        if (window.RTSAIDirector) {
+          try { window.RTSFogOfWarInstance.reveal(0, 400, -300, 80); } catch(e) {}
+          try { window.RTSFogOfWarInstance.reveal(0, -400, -300, 80); } catch(e) {}
+        }
+        // Reveal RTSAIFaction base positions (if loaded)
+        try { window.RTSFogOfWarInstance.reveal(0, 900, 300, 100); } catch(e) {}
+        try { window.RTSFogOfWarInstance.reveal(0, -1600, -800, 100); } catch(e) {}
       } catch(e) { /* best-effort prime */ }
     }
     
