@@ -703,9 +703,9 @@
      var playerIndex = 0;
      for (var ent of ENTITIES.values()) {
        if (ent.isDead || !ent.mesh) continue;
-       // Buildings (city centers, town halls) are permanent landmarks — always visible
-       if (ent.type === 'building') {
-         ent.mesh.visible = true;
+      // Buildings (city centers, town halls) are permanent landmarks — always visible
+        if (ent.type === 'building') {
+          ent.mesh.visible = true;
          continue;
        }
        var pos = ent.mesh.position;

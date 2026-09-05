@@ -237,7 +237,8 @@ export function install(Genesis) {
   const worldRoot = new T.Group();
   worldRoot.name = 'void-population';
 
-  let _warzoneCity = null;
+   let _warzoneCity = null;
+  let _tacticalAcum = 0;
   let _obsidianSpire = null;
   let _resonantVeil = null;
   let _solarForge = null;
@@ -3480,12 +3481,21 @@ export function install(Genesis) {
         window.RTSProductionPalette.install();
       } catch(e) { console.warn('[VoidPopulation] RTSProductionPalette install failed:', e && e.message); }
     }
-    // RTS-7: Fog of War — create THE instance (engine-core, minimap, ai-brain all read window.RTSFogOfWarInstance)
+    // RTS-7: Fog of War — installed but fully revealed (no fog hiding)
     if (window.RTSFogOfWar && !window.RTSFogOfWarInstance) {
       try {
         const fogInstance = new window.RTSFogOfWar({ scene: scene, entities: window.RTSEngineCore?.ENTITIES });
         fogInstance.install();
+        // Flood-fill the entire fog grid as explored + visible — disable the fog overlay
+        const FULL_WORLD = 3000;
+        const mask = fogInstance.mascara ? fogInstance.mascara(0) : null;
+        if (mask) {
+          for (let i = 0; i < mask.length; i++) mask[i] = 3; // BIT_EXPLORED | BIT_VISIBLE
+        }
+        // Prevent future fog ticks from re-erasing
+        fogInstance._refresh = function() {};
         window.RTSFogOfWarInstance = fogInstance;
+        console.log('[VoidPopulation] Fog installed but fully revealed (NO-BUILD fog disabled for gameplay)');
       } catch(e) { console.warn('[VoidPopulation] RTSFogOfWar install failed:', e && e.message); }
     }
     // RTS-6: Minimap — bottom-right canvas with terrain/fog/entities
@@ -3546,28 +3556,7 @@ export function install(Genesis) {
       console.log('[VoidPopulation] Registered Grand Tower + city centers with AoE-style RTS extensions.');
     }
 
-    // Prime fog masks now that town halls exist (prevents first-frame all-hidden)
-    if (window.RTSFogOfWarInstance) {
-      try {
-        window.RTSFogOfWarInstance.tick(0.05);
-        window.RTSFogOfWarInstance.reveal(0, -104, 401, 140); // PLAYER_HOME start area
-        // Reveal all city/world positions so landmarks are visible on the fog grid
-        for (let i = 0; i < worlds.length; i++) {
-          const w = worlds[i];
-          if (w && w.position) {
-            window.RTSFogOfWarInstance.reveal(0, w.position.x, w.position.z, 80);
-          }
-        }
-        // Reveal AI director base positions (imperium/bioHive home bases)
-        if (window.RTSAIDirector) {
-          try { window.RTSFogOfWarInstance.reveal(0, 400, -300, 80); } catch(e) {}
-          try { window.RTSFogOfWarInstance.reveal(0, -400, -300, 80); } catch(e) {}
-        }
-        // Reveal RTSAIFaction base positions (if loaded)
-        try { window.RTSFogOfWarInstance.reveal(0, 900, 300, 100); } catch(e) {}
-        try { window.RTSFogOfWarInstance.reveal(0, -1600, -800, 100); } catch(e) {}
-      } catch(e) { /* best-effort prime */ }
-    }
+    // Fog is fully revealed at install time (no prime needed)
     
     if (window.DivineTerrainSculptor) {
       try { window.DivineTerrainSculptor.install(scene, camera); } catch(e) { console.warn('[VoidPopulation] DivineTerrainSculptor install failed:', e && e.message); }
@@ -3653,6 +3642,27 @@ export function install(Genesis) {
 
     console.log('[VoidPopulation] Spawned', WORLD_COUNT, 'Lost Worlds + war fleet at distances', MIN_DIST, '-', MAX_DIST, 'units');
     return { built: true, worlds: worlds.length };
+  }
+
+  function _autoHarvestPlayer() {
+    if (!window.RTSEngineCore || !window.RTSEngineCore.ENTITIES) return;
+    const T = window.THREE;
+    if (!T) return;
+    let nearestResource = null, bestDist = Infinity;
+    const playerPos = new T.Vector3(-104, 0, 401);
+    for (const ent of window.RTSEngineCore.ENTITIES.values()) {
+      if (!ent || ent.isDead || ent.type !== 'resource' || !ent.mesh) continue;
+      const d = playerPos.distanceTo(ent.mesh.position);
+      if (d < bestDist) { bestDist = d; nearestResource = ent; }
+    }
+    if (!nearestResource) return;
+    const targetPos = nearestResource.mesh.position;
+    for (const ent of window.RTSEngineCore.ENTITIES.values()) {
+      if (!ent || ent.isDead || !ent.mesh) continue;
+      if (ent.faction !== 'voidCovenant' || ent.type !== 'unit' || !ent.maxCarry) continue;
+      if (ent.orders && ent.orders.length > 0) continue; // has existing orders
+      ent.orders = [{ type: 'move', destination: { x: targetPos.x, y: targetPos.y, z: targetPos.z } }];
+    }
   }
 
   function tick(dt) {
@@ -4027,6 +4037,12 @@ export function install(Genesis) {
     }
     if (window.RTSAIBrainInstance && window.RTSAIBrainInstance.tick) {
       window.RTSAIBrainInstance.tick(dt);
+    }
+    // Player auto-harvest: idle player harvesters auto-find nearest crystal nodes
+    _tacticalAcum += dt;
+    if (_tacticalAcum >= 2.0 && window.RTSEngineCore && window.RTSEngineCore.ENTITIES) {
+      _tacticalAcum = 0;
+      _autoHarvestPlayer();
     }
   }
 

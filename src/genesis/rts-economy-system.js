@@ -76,6 +76,8 @@
     }
 
     scene.add(group);
+    // Expose positions for fog reveal at startup
+    RESOURCES.NODE_POSITIONS = NODE_MESHES.map(c => ({ x: c.position.x, z: c.position.z }));
     console.log('[RTSEconomy] Spawned', count, 'Crystal Nodes.');
   }
 
