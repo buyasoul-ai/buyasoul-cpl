@@ -3648,20 +3648,31 @@ export function install(Genesis) {
     if (!window.RTSEngineCore || !window.RTSEngineCore.ENTITIES) return;
     const T = window.THREE;
     if (!T) return;
-    let nearestResource = null, bestDist = Infinity;
-    const playerPos = new T.Vector3(-104, 0, 401);
+    // Find nearest crystal node for each idle player harvester
+    const resourceEnts = [];
     for (const ent of window.RTSEngineCore.ENTITIES.values()) {
       if (!ent || ent.isDead || ent.type !== 'resource' || !ent.mesh) continue;
-      const d = playerPos.distanceTo(ent.mesh.position);
-      if (d < bestDist) { bestDist = d; nearestResource = ent; }
+      resourceEnts.push(ent);
     }
-    if (!nearestResource) return;
-    const targetPos = nearestResource.mesh.position;
+    if (resourceEnts.length === 0) return;
+
     for (const ent of window.RTSEngineCore.ENTITIES.values()) {
       if (!ent || ent.isDead || !ent.mesh) continue;
       if (ent.faction !== 'voidCovenant' || ent.type !== 'unit' || !ent.maxCarry) continue;
-      if (ent.orders && ent.orders.length > 0) continue; // has existing orders
-      ent.orders = [{ type: 'move', destination: { x: targetPos.x, y: targetPos.y, z: targetPos.z } }];
+      if (ent.orders && ent.orders.length > 0) continue; // has existing orders — don't override player commands
+      if (ent.state === 'harvesting' || ent.state === 'returning') continue;
+
+      // Find nearest resource
+      let nearest = null, bestDist = Infinity;
+      for (const res of resourceEnts) {
+        const d = ent.mesh.position.distanceTo(res.mesh.position);
+        if (d < bestDist && res.resourceAmount > 0) { bestDist = d; nearest = res; }
+      }
+      if (nearest) {
+        ent.orders = [{ type: 'harvest', targetId: nearest.id }];
+        ent.targetId = nearest.id;
+        ent.state = 'moving';
+      }
     }
   }
 
