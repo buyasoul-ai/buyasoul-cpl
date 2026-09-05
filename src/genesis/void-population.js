@@ -3678,6 +3678,11 @@ export function install(Genesis) {
 
   function tick(dt) {
     if (!camera) return;
+    if (window.__rtsDebugTick && performance.now() - window.__rtsDebugTick > 1000) {
+      const E = window.RTSEngineCore?.ENTITIES;
+      window.__rtsDebugTick = performance.now();
+      console.log('[RTS DEBUG] tick running. entities=' + (E ? E.size : 0) + ' fog=' + !!window.RTSFogOfWarInstance + ' director=' + !!window.RTSAIDirector + ' army=' + !!window.RTSWarCommand);
+    }
 
     // Throttled passive income: regen all ResourcePools once per second
     if (!window.__lastRegenTick || Date.now() - window.__lastRegenTick > 1000) {
