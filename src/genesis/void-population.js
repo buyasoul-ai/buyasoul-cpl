@@ -3574,12 +3574,15 @@ export function install(Genesis) {
     }
 
     // Install RTS Subsystem & AI Faction Commanders
-    if (window.RTSSubsystem && camera) {
-      try { window.RTSSubsystem.install(camera, scene); } catch(e) { console.warn('[VoidPopulation] RTS install failed:', e && e.message); }
-    }
-    if (window.RTSAIFaction) {
-      try { window.RTSAIFaction.install(scene); } catch(e) { console.warn('[VoidPopulation] RTSAIFaction install failed:', e && e.message); }
-    }
+    // rts-subsystem DISABLED per AGENTS.md — causes conflicts
+    // rts-ai-faction DISABLED per AGENTS.md — spawns autonomous commanders that conflict with RTSAIDirector + RTSAIBrain
+    // if (window.RTSSubsystem && camera) {
+    //   try { window.RTSSubsystem.install(camera, scene); } catch(e) { console.warn('[VoidPopulation] RTS install failed:', e && e.message); }
+    // }
+    // rts-ai-faction DISABLED per AGENTS.md — spawns autonomous commanders that conflict with RTSAIDirector + RTSAIBrain
+    // if (window.RTSAIFaction) {
+    //   try { window.RTSAIFaction.install(scene); } catch(e) { console.warn('[VoidPopulation] RTSAIFaction install failed:', e && e.message); }
+    // }
 
     // RTS AI Brain — fog-limited strategic/tactical AI (imperium + bioHive)
     if (window.RTSAIBrain && !window.RTSAIBrainInstance) {
@@ -3676,7 +3679,13 @@ export function install(Genesis) {
     }
   }
 
+  let _lastTickFrame = 0;
   function tick(dt) {
+    // Dedup guard: prevent double-tick when both EngineScheduler.run() and
+    // the direct fallback in index.html animate loop call tick() the same frame.
+    const _f = (typeof window !== 'undefined' && window.__genesisFrameSerial) || 0;
+    if (_f === _lastTickFrame) return;
+    _lastTickFrame = _f;
     if (!camera) return;
     // Visible RTS status HUD — shows entity count, fog, tick status
     if (!window.__rtsStatusEl) {
@@ -4072,12 +4081,14 @@ export function install(Genesis) {
     }
 
     // Tick RTS Subsystem & AI Factions
-    if (window.RTSSubsystem && window.RTSSubsystem.tick) {
-      window.RTSSubsystem.tick(dt);
-    }
-    if (window.RTSAIFaction && window.RTSAIFaction.tick) {
-      window.RTSAIFaction.tick(dt);
-    }
+    // rts-subsystem DISABLED per AGENTS.md
+    // if (window.RTSSubsystem && window.RTSSubsystem.tick) {
+    //   window.RTSSubsystem.tick(dt);
+    // }
+    // rts-ai-faction DISABLED per AGENTS.md — conflicts with RTSAIDirector + RTSAIBrain
+    // if (window.RTSAIFaction && window.RTSAIFaction.tick) {
+    //   window.RTSAIFaction.tick(dt);
+    // }
     if (window.RTSAIBrainInstance && window.RTSAIBrainInstance.tick) {
       window.RTSAIBrainInstance.tick(dt);
     }

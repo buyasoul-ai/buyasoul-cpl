@@ -1032,9 +1032,11 @@
     <script src="src/genesis/advanced-npc-engine.js"></script>
     <script src="src/genesis/procedural-architecture-engine.js"></script>
     <script src="src/genesis/engine-optimizer.js"></script>
-    <script src="src/genesis/rts-subsystem.js"></script>
+    <!-- rts-subsystem DISABLED: causes conflicts with RTSAIDirector + RTSAIBrain -->
+    <!-- <script src="src/genesis/rts-subsystem.js"></script> -->
     <script src="src/genesis/rts-ai-brain.js"></script>
-    <script src="src/genesis/rts-ai-faction.js"></script>
+    <!-- rts-ai-faction DISABLED: spawns autonomous commanders that conflict with RTSAIDirector + RTSAIBrain -->
+    <!-- <script src="src/genesis/rts-ai-faction.js"></script> -->
     <script src="src/genesis/terminal-sanctum.js"></script>
 
     <!-- Sovereign Void Realms (20 Realms) -->
@@ -8863,14 +8865,17 @@ if (window.__GENESIS_SECTOR_MANAGER !== false && Genesis.SectorManager) {
           // Install Fog of War (256x256 grid, updates from unit/building vision)
           // FOG DISABLED: flood-fill entire grid as explored+visible so RTS is always visible
           if (window.RTSFogOfWar && scene) {
-            window.RTSFogOfWarInstance = new window.RTSFogOfWar({ scene: scene });
+            window.RTSFogOfWarInstance = new window.RTSFogOfWar({ scene: scene, entities: window.RTSEngineCore?.ENTITIES });
             window.RTSFogOfWarInstance.install();
-            // Flood-fill entire fog grid as EXPLORED + VISIBLE
-            var _fm = window.RTSFogOfWarInstance.mascara ? window.RTSFogOfWarInstance.mascara(0) : null;
-            if (_fm) { for (var _fi = 0; _fi < _fm.length; _fi++) _fm[_fi] = 3; }
+            // Flood-fill ALL player grids (0=player, 1=imperium, 2=bioHive) as EXPLORED + VISIBLE
+            // This ensures RTSAIBrain._canSee() works for all AI factions
+            for (var _pi = 0; _pi < 3; _pi++) {
+              var _fm = window.RTSFogOfWarInstance.mascara ? window.RTSFogOfWarInstance.mascara(_pi) : null;
+              if (_fm) { for (var _fi = 0; _fi < _fm.length; _fi++) _fm[_fi] = 3; }
+            }
             // Prevent future fog ticks from re-erasing (keep everything visible)
             window.RTSFogOfWarInstance._refresh = function() {};
-            console.log('[Genesis] RTSFogOfWar installed — fully revealed (fog disabled for gameplay).');
+            console.log('[Genesis] RTSFogOfWar installed — fully revealed for ALL factions (3 grids flooded).');
           }
           // Install RTS economy
           if (window.RTSEconomySystem && scene) {
@@ -15404,7 +15409,8 @@ keyState[e.code] = true;
         if (Genesis.VerticalStackManager && Genesis.VerticalStackManager.refreshCompanions) Genesis.VerticalStackManager.refreshCompanions('surface');
 
         // ========== ANIMATION ==========
-        let time = 0, lastTime = 0, _frameCount = 0, _uiTick = 0, _hintCache = '', _genesisTick = 0, _genesisFrameSerial = 0, _populationAuditTimer = 0;
+         let time = 0, lastTime = 0, _frameCount = 0, _uiTick = 0, _hintCache = '', _genesisTick = 0, _genesisFrameSerial = 0, _populationAuditTimer = 0;
+         window.__genesisFrameSerial = 0;
         const surfaceSystemTicks = { billboards: 0, videos: 0, particles: 0, physics: 0, audio: 0, souls: 0, legacyAngels: 0, legacyHeaven: 0, sky: 0, traffic: 0, citizens: 0, avatars: 0, taskParticles: 0, gskVisuals: 0, runes: 0, recentExtensions: 0 };
         const heavenSystemTicks = { prototype: 0 };
         function diagnosticsVisibleInTree(object) {
@@ -15527,14 +15533,13 @@ keyState[e.code] = true;
             }
             if (window.__GENESIS_SECTOR_MANAGER !== false && Genesis.SectorManager && Genesis.SectorManager.tick) Genesis.SectorManager.tick();
             if (window.__GENESIS_VISIBILITY !== false && Genesis.Visibility && Genesis.Visibility.tick) Genesis.Visibility.tick();
-            if (window.__GENESIS_ANIM_SCHEDULER !== false && Genesis.AnimationScheduler && Genesis.AnimationScheduler.tick) Genesis.AnimationScheduler.tick(dt, ++_genesisFrameSerial);
+            if (window.__GENESIS_ANIM_SCHEDULER !== false && Genesis.AnimationScheduler && Genesis.AnimationScheduler.tick) { ++_genesisFrameSerial; window.__genesisFrameSerial = _genesisFrameSerial; Genesis.AnimationScheduler.tick(dt, _genesisFrameSerial); }
             if (window.__GENESIS_AGENT_GATEWAY === true && window.__installGenesisCoreFallback && (!Genesis.AgentGateway || !Genesis.ResourcePool || !Genesis.ReactionRules || !window.GenesisImmortality)) { try { window.__installGenesisCoreFallback(); } catch (_) {} }
             if (window.__GENESIS_SCHEDULER === true && Genesis.EngineScheduler && typeof Genesis.EngineScheduler.run === 'function') Genesis.EngineScheduler.run({ dt, time, serial: _genesisFrameSerial, scene, camera, renderer, surfaceActive: surfaceStratumActive, hubActive });
             // Direct RTS tick fallback — ensures RTS combat/movement/harvest runs even if
             // VoidPopulation's EngineScheduler defineTick didn't register (boot race).
-            // Safe: guarded by existence checks. void-population.tick() handles dedup.
             if (window.Genesis && window.Genesis.VoidPopulation && typeof window.Genesis.VoidPopulation.tick === 'function') {
-              try { window.Genesis.VoidPopulation.tick(dt); } catch (e) {}
+              try { window.Genesis.VoidPopulation.tick(dt); } catch (e) { console.error('[RTS] tick failed:', e && e.stack); }
             } else if (window.RTSEngineCore && window.RTSEngineCore.tick) {
               try { window.RTSEngineCore.tick(dt); } catch (e) {}
               if (window.RTSBridge && window.RTSBridge.tick) try { window.RTSBridge.tick(dt); } catch (e) {}
