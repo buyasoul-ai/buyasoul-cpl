@@ -3678,12 +3678,39 @@ export function install(Genesis) {
 
   function tick(dt) {
     if (!camera) return;
+    // Visible RTS status HUD — shows entity count, fog, tick status
+    if (!window.__rtsStatusEl) {
+      const el = document.createElement('div');
+      el.id = '__rtsStatusEl';
+      Object.assign(el.style, {
+        position: 'fixed', right: '12px', bottom: '80px',
+        background: 'rgba(0,0,0,0.7)', border: '1px solid #00ffcc',
+        color: '#00ffcc', fontFamily: 'monospace', fontSize: '11px',
+        padding: '8px 12px', borderRadius: '6px', zIndex: '999',
+        backdropFilter: 'blur(4px)', pointerEvents: 'none', lineHeight: '1.4'
+      });
+      document.body.appendChild(el);
+      window.__rtsStatusEl = el;
+    }
+
+    // Update status HUD
     if (window.__rtsDebugTick && performance.now() - window.__rtsDebugTick > 1000) {
       const E = window.RTSEngineCore?.ENTITIES;
       window.__rtsDebugTick = performance.now();
-      console.log('[RTS DEBUG] tick running. entities=' + (E ? E.size : 0) + ' fog=' + !!window.RTSFogOfWarInstance + ' director=' + !!window.RTSAIDirector + ' army=' + !!window.RTSWarCommand);
+      const units = E ? Array.from(E.values()).filter(e => e.type === 'unit' && !e.isDead) : [];
+      const buildings = E ? Array.from(E.values()).filter(e => e.type === 'building' && !e.isDead) : [];
+      const resources = E ? Array.from(E.values()).filter(e => e.type === 'resource' && !e.isDead) : [];
+      console.log('[RTS DEBUG] tick running. entities=' + (E ? E.size : 0) + ' units=' + units.length + ' buildings=' + buildings.length + ' resources=' + resources.length);
+      if (window.__rtsStatusEl) {
+        window.__rtsStatusEl.innerHTML = 'RTS: ACTIVE<br>' +
+          'Entities: ' + (E ? E.size : 0) + '<br>' +
+          'Units: ' + units.length + '<br>' +
+          'Buildings: ' + buildings.length + '<br>' +
+          'Resources: ' + resources.length + '<br>' +
+          'Fog: ' + (!window.RTSFogOfWarInstance ? 'disabled' : 'enabled') + '<br>' +
+          'Director: ' + (!window.RTSAIDirector ? 'null' : 'active');
+      }
     }
-
     // Throttled passive income: regen all ResourcePools once per second
     if (!window.__lastRegenTick || Date.now() - window.__lastRegenTick > 1000) {
       window.__lastRegenTick = Date.now();

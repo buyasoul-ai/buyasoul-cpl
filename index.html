@@ -8861,10 +8861,16 @@ if (window.__GENESIS_SECTOR_MANAGER !== false && Genesis.SectorManager) {
             console.log('[Genesis] RTSEngineCore installed with scene.');
           }
           // Install Fog of War (256x256 grid, updates from unit/building vision)
+          // FOG DISABLED: flood-fill entire grid as explored+visible so RTS is always visible
           if (window.RTSFogOfWar && scene) {
             window.RTSFogOfWarInstance = new window.RTSFogOfWar({ scene: scene });
             window.RTSFogOfWarInstance.install();
-            console.log('[Genesis] RTSFogOfWar installed (256x256 grid).');
+            // Flood-fill entire fog grid as EXPLORED + VISIBLE
+            var _fm = window.RTSFogOfWarInstance.mascara ? window.RTSFogOfWarInstance.mascara(0) : null;
+            if (_fm) { for (var _fi = 0; _fi < _fm.length; _fi++) _fm[_fi] = 3; }
+            // Prevent future fog ticks from re-erasing (keep everything visible)
+            window.RTSFogOfWarInstance._refresh = function() {};
+            console.log('[Genesis] RTSFogOfWar installed — fully revealed (fog disabled for gameplay).');
           }
           // Install RTS economy
           if (window.RTSEconomySystem && scene) {
@@ -15524,6 +15530,20 @@ keyState[e.code] = true;
             if (window.__GENESIS_ANIM_SCHEDULER !== false && Genesis.AnimationScheduler && Genesis.AnimationScheduler.tick) Genesis.AnimationScheduler.tick(dt, ++_genesisFrameSerial);
             if (window.__GENESIS_AGENT_GATEWAY === true && window.__installGenesisCoreFallback && (!Genesis.AgentGateway || !Genesis.ResourcePool || !Genesis.ReactionRules || !window.GenesisImmortality)) { try { window.__installGenesisCoreFallback(); } catch (_) {} }
             if (window.__GENESIS_SCHEDULER === true && Genesis.EngineScheduler && typeof Genesis.EngineScheduler.run === 'function') Genesis.EngineScheduler.run({ dt, time, serial: _genesisFrameSerial, scene, camera, renderer, surfaceActive: surfaceStratumActive, hubActive });
+            // Direct RTS tick fallback — ensures RTS combat/movement/harvest runs even if
+            // VoidPopulation's EngineScheduler defineTick didn't register (boot race).
+            // Safe: guarded by existence checks. void-population.tick() handles dedup.
+            if (window.Genesis && window.Genesis.VoidPopulation && typeof window.Genesis.VoidPopulation.tick === 'function') {
+              try { window.Genesis.VoidPopulation.tick(dt); } catch (e) {}
+            } else if (window.RTSEngineCore && window.RTSEngineCore.tick) {
+              try { window.RTSEngineCore.tick(dt); } catch (e) {}
+              if (window.RTSBridge && window.RTSBridge.tick) try { window.RTSBridge.tick(dt); } catch (e) {}
+              if (window.RTSFogOfWarInstance && window.RTSFogOfWarInstance.tick) try { window.RTSFogOfWarInstance.tick(dt); } catch (e) {}
+              if (window.RTSBaseBuilder && window.RTSBaseBuilder.tick) try { window.RTSBaseBuilder.tick(dt); } catch (e) {}
+              if (window.RTSWarCommand && window.RTSWarCommand.tick) try { window.RTSWarCommand.tick(dt); } catch (e) {}
+              if (window.RTSAIDirector && window.RTSAIDirector.tick) try { window.RTSAIDirector.tick(dt); } catch (e) {}
+              if (window.RTSGameState && typeof window.RTSGameState.tick === 'function') try { window.RTSGameState.tick(); } catch (e) {}
+            }
             if (window.__GENESIS_POPULATION_ENGINE !== false && Genesis.PopulationEngine && typeof Genesis.PopulationEngine.tick === 'function') Genesis.PopulationEngine.tick(dt);
             // Genesis Scale Engine (Phase E): tick AFTER PopulationEngine. Bounded
             // population bands + instanced traffic sync. No-op when flag OFF (it is
