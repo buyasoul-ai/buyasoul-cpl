@@ -180,7 +180,10 @@
     });
   }
 
+  let _installed = false;
   function install(scene, camera) {
+    if (_installed) return; // prevent double-install → duplicate input handlers
+    _installed = true;
     SCENE = scene;
     CAMERA = camera;
     setupInputHandlers();

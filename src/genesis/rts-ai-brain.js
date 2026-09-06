@@ -187,15 +187,16 @@
 
       // IDLE: patrol small area (exploration) — but only every ~2s to save CPU
       if (!unit.targetPos && Math.random() < 0.05) {
+        const T = T();
         const rally = this._plan.rallyPoints.get(faction) || { x: 0, z: 0 };
         const jitter = 30;
         unit.orders = [{
           type: 'move',
-          destination: {
-            x: rally.x + (Math.random() - 0.5) * jitter,
-            z: rally.z + (Math.random() - 0.5) * jitter,
-            clone() { return { x: this.x, z: this.z }; },
-          },
+          destination: new T.Vector3(
+            rally.x + (Math.random() - 0.5) * jitter,
+            0,
+            rally.z + (Math.random() - 0.5) * jitter
+          ),
         }];
       }
     }

@@ -111,7 +111,9 @@ const TYPE_COLORS = {
   // Original types
   combat: 0xff3355, crafting: 0x66ff88, trading: 0xffdd00, exploration: 0xaa66ff,
   breeding: 0xff66cc, governance: 0xff8844, building: 0x4488ff,
-  conversation: 0xffaa00, districts: 0x00ffcc, cplclone: 0x66ffff, grandtower: 0xffcc44,   castle: 0xcc8844, colosseum: 0xff8844
+   conversation: 0xffaa00, districts: 0x00ffcc, cplclone: 0x66ffff, grandtower: 0xffcc44,   castle: 0xcc8844, colosseum: 0xff8844,
+  // Expansion Pack 1 types
+  time: 0xaa66ff, reality: 0xff66cc, knowledge: 0x4488ff, soul: 0xffaa00, light: 0xffdd00, industry: 0x66ff88
 };
 const TYPE_QUESTS = {
   // Lost Mechanics Archetypes
@@ -140,7 +142,14 @@ const TYPE_QUESTS = {
   cplclone: 'Build a CPL clone city — randomized by the Lost Mechanics Bible',
   grandtower: 'The Grand Tower — ascend 100 floors, forge legendary souls',
   castle: 'Stormhold Castle — conquer the Outer Void fortress, claim its PLT treasury',
-  colosseum: 'Cosmic Colosseum — triumph in the arena, earn glory beyond measure'
+   colosseum: 'Cosmic Colosseum — triumph in the arena, earn glory beyond measure',
+  // Expansion Pack 1 types
+  time: 'Master Temporal Flow — freeze and unfreeze reality at will',
+  reality: 'Rewrite the Fundamental Laws — bend physics to your will',
+  knowledge: 'Unlock the Archive — read the fate of all souls',
+  soul: 'Merge Your Essence — become one with the cosmic soul',
+  light: 'Channel the Solar Spire — illuminate the darkness',
+  industry: 'Forge Beyond Infinity — craft reality itself'
 };
 const TYPE_DENIZEN_NAMES = {
   // Lost Mechanics Archetypes
@@ -169,7 +178,14 @@ const TYPE_DENIZEN_NAMES = {
   cplclone: ['City Architect','Neon Weaver','Grid Keeper','District Mind','Clone Master'],
   grandtower: ['Tower Guardian','Forge Master','Soul Keeper','Gate Watcher','Crown Bearer'],
   castle: ['Castle Lord','Keep Warden','Wall Commander','Gate Captain','Iron Sentinel'],
-  colosseum: ['Arena Champion','Gladiator Prime','Crowd Master','Sand Lord','Triumph Herald']
+   colosseum: ['Arena Champion','Gladiator Prime','Crowd Master','Sand Lord','Triumph Herald'],
+  // Expansion Pack 1 types
+  time: ['Chronarch','Temporal Sage','Hourglass Keeper','Paradox Weaver','Era Walker'],
+  reality: ['Reality Anchor','Law Speaker','Physics Bender','Dimensional Forge','Truth Seeker'],
+  knowledge: ['Lore Master','Archive Keeper','Truth Seer','Memory Weaver','Wisdom Keeper'],
+  soul: ['Soul Binder','Essence Weaver','Spirit Walker','Life Echo','Void Listener'],
+  light: ['Lumen Sage','Photon Keeper','Solar Flare','Radiance Caller','Prism Bearer'],
+  industry: ['Forge Lord','Steel Magnate','Assembly Chief','Production Maestro','Factory Overseer']
 };
 
 function seededRandom(seed) {

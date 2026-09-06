@@ -357,8 +357,9 @@
 
     group.position.set(x, 0, z);
     group.userData.isPlayerBuilding = true;
+    const _buildTime = (defId === 'townhall') ? 10 : (defId === 'turret') ? 6 : (defId === 'barracks') ? 8 : (defId === 'refinery') ? 8 : 4;
     group.userData.buildProgress = 0;
-    group.userData.buildMax = buildTime;
+    group.userData.buildMax = _buildTime;
     SCENE.add(group);
 
     // Register with RTSEngineCore
@@ -368,8 +369,7 @@
       if (entity) {
         entity.isPlayerBuilt = true;
         entity.isTownHall = (defId === 'townhall');
-        // Construction progress: starts at 0, builds up over time
-        const buildTime = (defId === 'townhall') ? 10 : (defId === 'turret') ? 6 : (defId === 'barracks') ? 8 : (defId === 'refinery') ? 8 : 4;
+        const buildTime = _buildTime;
         entity.buildProgress = 0;       // 0 = placed, 1 = complete
         entity.buildMaxProgress = buildTime;
         entity.buildTime = buildTime;

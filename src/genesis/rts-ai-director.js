@@ -67,15 +67,20 @@
     console.log(`[RTS AI Director] Spawned ${factionId} unit ${ent.id}`);
   }
 
-  function tickAI(dt) {
+   function tickAI(dt) {
     if (!window.RTSEngineCore) return;
 
     for (const factionId of Object.keys(FACTIONS)) {
       const faction = FACTIONS[factionId];
       
-      // 1. Resource regeneration & Unit Spawning
-      faction.resources += _resRate * dt; // passively gain resources
-      if (faction.resources >= faction.spawnCost) {
+      // 1. Resource regeneration & Unit Spawning (with unit cap)
+      faction.resources += _resRate * dt;
+      // Count living units of this faction — skip spawn if at cap
+      let livingCount = 0;
+      for (const ent of window.RTSEngineCore.ENTITIES.values()) {
+        if (!ent.isDead && ent.faction === factionId && ent.type === 'unit') livingCount++;
+      }
+      if (faction.resources >= faction.spawnCost && livingCount < 40) {
         faction.resources -= faction.spawnCost;
         spawnAIUnit(factionId);
       }
