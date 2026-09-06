@@ -233,9 +233,11 @@ export function install(Genesis) {
   function _texturedStd(type, color, opts) {
     if (window.VoidBuildingTextures && window.VoidBuildingTextures.materialFor) {
       return window.VoidBuildingTextures.materialFor(type, color, opts);
+        }
+      }
+      console.log('[VoidPopulation] Registered Grand Tower + city centers with AoE-style RTS extensions.');
     }
-    return _std(opts);
-  }
+
   // Point-light factory that registers with the LightingManager so the hard cap
   // (8 active point lights) tames the 400+ light scene. On low GPUs lights are
   // decorative-only and get pruned first by capCheck.
