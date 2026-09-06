@@ -276,12 +276,14 @@
             // Match NPC entities (entityId set) but skip RTS units (_rtsUnit set) 
             // and RTSEngineCore units (faction is voidCovenant/imperium/bioHive, not neutral)
             const entId = obj.userData && obj.userData.entityId;
-            if (entId && !obj._rtsUnit && !obj.userData.isWarship) {
-              const ent = window.RTSEngineCore ? window.RTSEngineCore.getEntity(entId) : null;
-              // Skip RTS combat units (voidCovenant/imperium/bioHive) — let RTS handlers deal with them
-              if (ent && ent.type === 'unit' && ['voidCovenant','imperium','bioHive'].includes(ent.faction)) continue;
-              hitNPC = obj; break;
-            }
+             if (entId && !obj._rtsUnit && !obj.userData.isWarship) {
+               const ent = window.RTSEngineCore ? window.RTSEngineCore.getEntity(entId) : null;
+               // Skip RTS combat units (voidCovenant/imperium/bioHive) — let RTS handlers deal with them
+               if (ent && ent.type === 'unit' && ['voidCovenant','imperium','bioHive'].includes(ent.faction)) continue;
+               // Skip RTS buildings (barracks, turrets, etc.) — let RTS bridge/UI handle them
+               if (ent && ent.type === 'building') continue;
+               hitNPC = obj; break;
+             }
             obj = obj.parent;
           }
           if (hitNPC) break;

@@ -3491,6 +3491,8 @@ export function install(Genesis) {
     try { window.RTSAIDirector && window.RTSAIDirector.install(scene); } catch(e) { console.error('[RTS FATAL] RTSAIDirector:', e && e.message); }
     try { window.RTSWarCommand && window.RTSWarCommand.install(scene); } catch(e) { console.error('[RTS FATAL] RTSWarCommand:', e && e.message); }
     try { if (window.RTSAIBrain && !window.RTSAIBrainInstance) { window.RTSAIBrainInstance = new window.RTSAIBrain({ entities: window.RTSEngineCore?.ENTITIES, fog: window.RTSFogOfWarInstance, playerIndex: 1 }); window.RTSAIBrainInstance.install(); } } catch(e) { console.error('[RTS FATAL] RTSAIBrain:', e && e.message); }
+    try { window.AdvancedNPCEngine && window.AdvancedNPCEngine.install(scene); } catch(e) { console.error('[RTS FATAL] AdvancedNPCEngine:', e && e.message); }
+    try { window.DivineTerrainSculptor && window.DivineTerrainSculptor.install(scene, camera); } catch(e) { console.error('[RTS FATAL] DivineTerrainSculptor:', e && e.message); }
 
     // Phase 5: Register Grand Tower as a town hall (harvest drop-off point)
     // and mark enemy bases in the nav grid. Wire into VoidRTSBuildings for garrison/production.
@@ -3525,25 +3527,6 @@ export function install(Genesis) {
           console.log(`[VoidPopulation] Registered ${bList.length} AoE-style buildings in ${wt} world.`);
         }
       }
-      console.log('[VoidPopulation] Registered Grand Tower + city centers with AoE-style RTS extensions.');
-    }
-
-    // Fog is fully revealed at install time (no prime needed)
-    
-    if (window.DivineTerrainSculptor) {
-      try { window.DivineTerrainSculptor.install(scene, camera); } catch(e) { console.warn('[VoidPopulation] DivineTerrainSculptor install failed:', e && e.message); }
-    }
-    
-    if (window.RTSAIDirector) {
-      try { window.RTSAIDirector.install(scene); } catch(e) { console.warn('[VoidPopulation] RTSAIDirector install failed:', e && e.message); }
-    }
-    if (window.AdvancedNPCEngine) {
-      try { window.AdvancedNPCEngine.install(scene); } catch(e) { console.warn('[VoidPopulation] AdvancedNPCEngine install failed:', e && e.message); }
-    }
-    // RTS War Command — must load AFTER both AIDirector + NPCEngine are installed
-    if (window.RTSWarCommand && typeof window.RTSWarCommand.install === 'function') {
-      try { window.RTSWarCommand.install(scene); } catch(e) { if (typeof console !== 'undefined') console.warn('[VoidPopulation] RTSWarCommand install failed:', e && e.message); }
-    }
 
     // Install RTS Subsystem & AI Faction Commanders
     // rts-subsystem DISABLED per AGENTS.md — causes conflicts
