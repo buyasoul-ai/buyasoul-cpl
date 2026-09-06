@@ -3459,84 +3459,38 @@ export function install(Genesis) {
     if (_spawnedCount > 0) console.log('[VoidPopulation] Spawned', _spawnedCount, 'Sovereign Void Realms');
 
     // Install Master Art Pass V2 & Omnibus (Atmosphere, SSAO, Galactic Overlay, Sound Drone)
-    if (window.GodforgeArtPassV2) {
-      try { window.GodforgeArtPassV2.install(scene); } catch(e) { console.warn('[VoidPopulation] ArtPassV2 install failed:', e && e.message); }
-    }
-    if (window.GodforgeArtPassOmnibus) {
-      try { window.GodforgeArtPassOmnibus.install(scene); } catch(e) { console.warn('[VoidPopulation] ArtPassOmnibus install failed:', e && e.message); }
-    }
-    if (window.StoryQuestSystem) {
-      try { window.StoryQuestSystem.install(); } catch(e) { console.warn('[VoidPopulation] StoryQuestSystem install failed:', e && e.message); }
-    }
-    if (window.GodPowersEngine) {
-      try { window.GodPowersEngine.install(scene); } catch(e) { console.warn('[VoidPopulation] GodPowersEngine install failed:', e && e.message); }
-    }
-    if (window.StarCraftAsymmetricEngine) {
-      try { window.StarCraftAsymmetricEngine.install(scene); } catch(e) { console.warn('[VoidPopulation] StarCraftAsymmetricEngine install failed:', e && e.message); }
-    }
-    if (window.RTSEngineCore) {
-      try { window.RTSEngineCore.install(scene); } catch(e) { console.warn('[VoidPopulation] RTSEngineCore install failed:', e && e.message); }
-    }
-    if (window.RTSNavGrid) {
-      try { window.RTSNavGrid.install({ cellSize: 5 }); } catch(e) { console.warn('[VoidPopulation] RTSNavGrid install failed:', e && e.message); }
-    }
-    if (window.RTSInputRouter) {
-      try { window.RTSInputRouter.install({ scene: scene, camera: camera }); } catch(e) { console.warn('[VoidPopulation] RTSInputRouter install failed:', e && e.message); }
-    }
-    if (window.RTSUICore) {
-      try { window.RTSUICore.install(); } catch(e) { console.warn('[VoidPopulation] RTSUICore install failed:', e && e.message); }
-    }
-    
-    // RTS-1 + RTS-2: Unified Selection + Order Generator (replaces fragmented handler war)
-    if (window.RTSBridge) {
-      try { window.RTSBridge.install({ scene: scene, camera: camera }); } catch(e) { console.warn('[VoidPopulation] RTSBridge install failed:', e && e.message); }
-    }
-    // RTS-5: Production Palette — bottom bar with build icons
-    if (window.RTSProductionPalette) {
-      try {
-        window.RTSProductionPalette._ents = window.RTSEngineCore?.ENTITIES;
-        window.RTSProductionPalette._scene = scene;
-        window.RTSProductionPalette.install();
-      } catch(e) { console.warn('[VoidPopulation] RTSProductionPalette install failed:', e && e.message); }
-    }
-    // RTS-7: Fog of War — installed but fully revealed (no fog hiding)
-    if (window.RTSFogOfWar && !window.RTSFogOfWarInstance) {
-      try {
-        const fogInstance = new window.RTSFogOfWar({ scene: scene, entities: window.RTSEngineCore?.ENTITIES });
-        fogInstance.install();
-        // Flood-fill the entire fog grid as explored + visible — disable the fog overlay
-        const FULL_WORLD = 3000;
-        const mask = fogInstance.mascara ? fogInstance.mascara(0) : null;
-        if (mask) {
-          for (let i = 0; i < mask.length; i++) mask[i] = 3; // BIT_EXPLORED | BIT_VISIBLE
-        }
-        // Prevent future fog ticks from re-erasing
-        fogInstance._refresh = function() {};
-        window.RTSFogOfWarInstance = fogInstance;
-        console.log('[VoidPopulation] Fog installed but fully revealed (NO-BUILD fog disabled for gameplay)');
-      } catch(e) { console.warn('[VoidPopulation] RTSFogOfWar install failed:', e && e.message); }
-    }
-    // RTS-6: Minimap — bottom-right canvas with terrain/fog/entities
-    if (window.RTSMinimap) {
-      try {
-        window.__rtsMinimap = new window.RTSMinimap({ scene, camera, entities: window.RTSEngineCore?.ENTITIES });
-        window.__rtsMinimap.install();
-      } catch(e) { console.warn('[VoidPopulation] RTSMinimap install failed:', e && e.message); }
-    }
-    
-    if (window.RTSEconomySystem) {
-      try { window.RTSEconomySystem.install(scene); } catch(e) { console.warn('[VoidPopulation] RTSEconomySystem install failed:', e && e.message); }
-    }
-    
-    if (window.RTSUIEngine) {
-      try { window.RTSUIEngine.install(scene, camera); } catch(e) { console.warn('[VoidPopulation] RTSUIEngine install failed:', e && e.message); }
-    }
-    if (window.RTSBaseBuilder) {
-      try { window.RTSBaseBuilder.install({ scene: scene, camera: camera }); } catch(e) { console.warn('[VoidPopulation] RTSBaseBuilder install failed:', e && e.message); }
-    }
-    if (window.RTSProductionSystem) {
-      try { window.RTSProductionSystem.install(scene); } catch(e) { console.warn('[VoidPopulation] RTSProductionSystem install failed:', e && e.message); }
-    }
+    try { window.GodforgeArtPassV2 && window.GodforgeArtPassV2.install(scene); } catch(e) { console.error('[RTS FATAL] ArtPassV2:', e && e.message); }
+    try { window.GodforgeArtPassOmnibus && window.GodforgeArtPassOmnibus.install(scene); } catch(e) { console.error('[RTS FATAL] ArtPassOmnibus:', e && e.message); }
+    try { window.StoryQuestSystem && window.StoryQuestSystem.install(); } catch(e) { console.error('[RTS FATAL] StoryQuestSystem:', e && e.message); }
+    try { window.GodPowersEngine && window.GodPowersEngine.install(scene); } catch(e) { console.error('[RTS FATAL] GodPowersEngine:', e && e.message); }
+    try { window.StarCraftAsymmetricEngine && window.StarCraftAsymmetricEngine.install(scene); } catch(e) { console.error('[RTS FATAL] StarCraftAsymmetricEngine:', e && e.message); }
+    try { window.RTSEngineCore && window.RTSEngineCore.install(scene); } catch(e) { console.error('[RTS FATAL] RTSEngineCore:', e && e.message); }
+    try { window.RTSNavGrid && window.RTSNavGrid.install({ cellSize: 5 }); } catch(e) { console.error('[RTS FATAL] RTSNavGrid:', e && e.message); }
+    try { window.RTSInputRouter && window.RTSInputRouter.install({ scene: scene, camera: camera }); } catch(e) { console.error('[RTS FATAL] RTSInputRouter:', e && e.message); }
+    try { window.RTSUICore && window.RTSUICore.install(); } catch(e) { console.error('[RTS FATAL] RTSUICore:', e && e.message); }
+    try { window.RTSBridge && window.RTSBridge.install({ scene: scene, camera: camera }); } catch(e) { console.error('[RTS FATAL] RTSBridge:', e && e.message); }
+    try { window.RTSProductionPalette && ((window.RTSProductionPalette._ents = window.RTSEngineCore?.ENTITIES, window.RTSProductionPalette._scene = scene, window.RTSProductionPalette.install())); } catch(e) { console.error('[RTS FATAL] RTSProductionPalette:', e && e.message); }
+    try { window.RTSFogOfWar && !window.RTSFogOfWarInstance && (() => {
+      const fogInstance = new window.RTSFogOfWar({ scene: scene, entities: window.RTSEngineCore?.ENTITIES });
+      fogInstance.install();
+      const mask = fogInstance.mascara ? fogInstance.mascara(0) : null;
+      if (mask) { for (let i = 0; i < mask.length; i++) mask[i] = 3; }
+      for (let _pi = 1; _pi < 3; _pi++) {
+        const _m2 = fogInstance.mascara ? fogInstance.mascara(_pi) : null;
+        if (_m2) { for (let i = 0; i < _m2.length; i++) _m2[i] = 3; }
+      }
+      fogInstance._refresh = function() {};
+      window.RTSFogOfWarInstance = fogInstance;
+    })(); } catch(e) { console.error('[RTS FATAL] RTSFogOfWar:', e && e.message); }
+    try { window.__rtsMinimap = new window.RTSMinimap({ scene, camera, entities: window.RTSEngineCore?.ENTITIES }); window.__rtsMinimap.install(); } catch(e) { console.error('[RTS FATAL] RTSMinimap:', e && e.message); }
+    try { window.RTSEconomySystem && window.RTSEconomySystem.install(scene); } catch(e) { console.error('[RTS FATAL] RTSEconomySystem:', e && e.message); }
+    try { window.RTSUIEngine && window.RTSUIEngine.install(scene, camera); } catch(e) { console.error('[RTS FATAL] RTSUIEngine:', e && e.message); }
+    try { window.RTSBaseBuilder && window.RTSBaseBuilder.install({ scene: scene, camera: camera }); } catch(e) { console.error('[RTS FATAL] RTSBaseBuilder:', e && e.message); }
+    try { window.RTSProductionSystem && window.RTSProductionSystem.install(scene); } catch(e) { console.error('[RTS FATAL] RTSProductionSystem:', e && e.message); }
+    try { window.RTSGameState && window.RTSGameState.install({ economy: window.RTSEconomySystem, entities: window.RTSEngineCore?.ENTITIES }); } catch(e) { console.error('[RTS FATAL] RTSGameState:', e && e.message); }
+    try { window.RTSAIDirector && window.RTSAIDirector.install(scene); } catch(e) { console.error('[RTS FATAL] RTSAIDirector:', e && e.message); }
+    try { window.RTSWarCommand && window.RTSWarCommand.install(scene); } catch(e) { console.error('[RTS FATAL] RTSWarCommand:', e && e.message); }
+    try { if (window.RTSAIBrain && !window.RTSAIBrainInstance) { window.RTSAIBrainInstance = new window.RTSAIBrain({ entities: window.RTSEngineCore?.ENTITIES, fog: window.RTSFogOfWarInstance, playerIndex: 1 }); window.RTSAIBrainInstance.install(); } } catch(e) { console.error('[RTS FATAL] RTSAIBrain:', e && e.message); }
 
     // Phase 5: Register Grand Tower as a town hall (harvest drop-off point)
     // and mark enemy bases in the nav grid. Wire into VoidRTSBuildings for garrison/production.
@@ -4051,65 +4005,25 @@ export function install(Genesis) {
     }
     // RTS-1 + RTS-2 + RTS-3: order executor first (so engine-core sees fresh
     // targets this frame), then selection rings
-    if (window.RTSBridge && window.RTSBridge.tick) {
-      window.RTSBridge.tick(dt);
-    }
+    try { if (window.RTSBridge && window.RTSBridge.tick) window.RTSBridge.tick(dt); } catch(e) { console.error('[RTS] Bridge.tick:', e && e.message); }
     // Fog of war refreshes before engine-core so applyFogVisibility uses fresh masks
-    if (window.RTSFogOfWarInstance && window.RTSFogOfWarInstance.tick) {
-      window.RTSFogOfWarInstance.tick(dt);
-    }
-    if (window.RTSEngineCore && window.RTSEngineCore.tick) {
-      window.RTSEngineCore.tick(dt);
-    }
-    
-    if (window.RTSEconomySystem && window.RTSEconomySystem.tick) {
-      window.RTSEconomySystem.tick(dt);
-    }
-    
-    if (window.RTSUIEngine && window.RTSUIEngine.tick) {
-      window.RTSUIEngine.tick(dt);
-    }
-    if (window.RTSUICore && window.RTSUICore.tick) {
-      window.RTSUICore.tick(dt);
-    }
-    if (window.RTSBaseBuilder && window.RTSBaseBuilder.tick) {
-      window.RTSBaseBuilder.tick(dt);
-    }
-    if (window.RTSProductionSystem && window.RTSProductionSystem.tick) {
-      window.RTSProductionSystem.tick(dt);
-    }
-    if (window.RTSGameState && window.RTSGameState.tick) {
-      window.RTSGameState.tick();
-    }
-    if (window.GodPowersEngine && window.GodPowersEngine.tick) {
-      window.GodPowersEngine.tick(dt);
-    }
-    // RTS-5 + RTS-6: minimap and palette ticks (after all entities move)
-    if (window.__rtsMinimap && window.__rtsMinimap.tick) window.__rtsMinimap.tick(dt);
-    if (window.RTSProductionPalette && window.RTSProductionPalette.tick) window.RTSProductionPalette.tick(dt);
-    if (window.AdvancedNPCEngine && window.AdvancedNPCEngine.tick) {
-      window.AdvancedNPCEngine.tick(dt);
-    }
-    
-    if (window.RTSAIDirector && window.RTSAIDirector.tick) {
-      window.RTSAIDirector.tick(dt);
-    }
-    if (window.RTSWarCommand && window.RTSWarCommand.tick) {
-      window.RTSWarCommand.tick(dt);
-    }
-
-    // Tick RTS Subsystem & AI Factions
+    try { if (window.RTSFogOfWarInstance && window.RTSFogOfWarInstance.tick) window.RTSFogOfWarInstance.tick(dt); } catch(e) { console.error('[RTS] Fog.tick:', e && e.message); }
+    try { if (window.RTSEngineCore && window.RTSEngineCore.tick) window.RTSEngineCore.tick(dt); } catch(e) { console.error('[RTS] EngineCore.tick:', e && e.message); }
+    try { if (window.RTSEconomySystem && window.RTSEconomySystem.tick) window.RTSEconomySystem.tick(dt); } catch(e) { console.error('[RTS] Economy.tick:', e && e.message); }
+    try { if (window.RTSUIEngine && window.RTSUIEngine.tick) window.RTSUIEngine.tick(dt); } catch(e) { console.error('[RTS] UIEngine.tick:', e && e.message); }
+    try { if (window.RTSUICore && window.RTSUICore.tick) window.RTSUICore.tick(dt); } catch(e) { console.error('[RTS] UICore.tick:', e && e.message); }
+    try { if (window.RTSBaseBuilder && window.RTSBaseBuilder.tick) window.RTSBaseBuilder.tick(dt); } catch(e) { console.error('[RTS] BaseBuilder.tick:', e && e.message); }
+    try { if (window.RTSProductionSystem && window.RTSProductionSystem.tick) window.RTSProductionSystem.tick(dt); } catch(e) { console.error('[RTS] Production.tick:', e && e.message); }
+    try { if (window.RTSGameState && typeof window.RTSGameState.tick === 'function') window.RTSGameState.tick(); } catch(e) { console.error('[RTS] GameState.tick:', e && e.message); }
+    try { if (window.GodPowersEngine && window.GodPowersEngine.tick) window.GodPowersEngine.tick(dt); } catch(e) { console.error('[RTS] GodPowers.tick:', e && e.message); }
+    try { if (window.__rtsMinimap && window.__rtsMinimap.tick) window.__rtsMinimap.tick(dt); } catch(e) { console.error('[RTS] Minimap.tick:', e && e.message); }
+    try { if (window.RTSProductionPalette && window.RTSProductionPalette.tick) window.RTSProductionPalette.tick(dt); } catch(e) { console.error('[RTS] Palette.tick:', e && e.message); }
+    try { if (window.AdvancedNPCEngine && window.AdvancedNPCEngine.tick) window.AdvancedNPCEngine.tick(dt); } catch(e) { console.error('[RTS] NPCEngine.tick:', e && e.message); }
+    try { if (window.RTSAIDirector && window.RTSAIDirector.tick) window.RTSAIDirector.tick(dt); } catch(e) { console.error('[RTS] AIDirector.tick:', e && e.message); }
+    try { if (window.RTSWarCommand && window.RTSWarCommand.tick) window.RTSWarCommand.tick(dt); } catch(e) { console.error('[RTS] WarCommand.tick:', e && e.message); }
     // rts-subsystem DISABLED per AGENTS.md
-    // if (window.RTSSubsystem && window.RTSSubsystem.tick) {
-    //   window.RTSSubsystem.tick(dt);
-    // }
     // rts-ai-faction DISABLED per AGENTS.md — conflicts with RTSAIDirector + RTSAIBrain
-    // if (window.RTSAIFaction && window.RTSAIFaction.tick) {
-    //   window.RTSAIFaction.tick(dt);
-    // }
-    if (window.RTSAIBrainInstance && window.RTSAIBrainInstance.tick) {
-      window.RTSAIBrainInstance.tick(dt);
-    }
+    try { if (window.RTSAIBrainInstance && window.RTSAIBrainInstance.tick) window.RTSAIBrainInstance.tick(dt); } catch(e) { console.error('[RTS] AIBrain.tick:', e && e.message); }
     // Player auto-harvest: idle player harvesters auto-find nearest crystal nodes
     _tacticalAcum += dt;
     if (_tacticalAcum >= 2.0 && window.RTSEngineCore && window.RTSEngineCore.ENTITIES) {

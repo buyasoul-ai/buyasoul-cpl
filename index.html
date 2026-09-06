@@ -8851,83 +8851,62 @@ if (window.__GENESIS_SECTOR_MANAGER !== false && Genesis.SectorManager) {
         }
 
         // ========== VOID POPULATION — Lost Worlds scattered in the void ==========
-        window.__GENESIS_REALM_WORLD = (typeof window.__GENESIS_REALM_WORLD === 'boolean') ? window.__GENESIS_REALM_WORLD : true;
-        if (window.__GENESIS_REALM_WORLD !== false) {
-          installRealmWorld(window.Genesis);
+        // OPEN ALL GATES: no feature flags, no try/catch swallowing, no if-guards
+        window.__GENESIS_VOID_POPULATION = true;
+        // Install RTS engine core with scene BEFORE populating worlds
+        try { window.RTSEngineCore.install(scene); console.log('[Genesis] RTSEngineCore installed with scene.'); } catch(e) { console.error('[RTS FATAL] RTSEngineCore.install:', e && e.message); }
+        // Install Fog of War (256x256 grid, updates from unit/building vision)
+        // FOG DISABLED: flood-fill entire grid as explored+visible so RTS is always visible
+        try {
+          window.RTSFogOfWarInstance = new window.RTSFogOfWar({ scene: scene, entities: window.RTSEngineCore?.ENTITIES });
+          window.RTSFogOfWarInstance.install();
+          for (var _pi = 0; _pi < 3; _pi++) {
+            var _fm = window.RTSFogOfWarInstance.mascara ? window.RTSFogOfWarInstance.mascara(_pi) : null;
+            if (_fm) { for (var _fi = 0; _fi < _fm.length; _fi++) _fm[_fi] = 3; }
+          }
+          window.RTSFogOfWarInstance._refresh = function() {};
+          console.log('[Genesis] RTSFogOfWar installed — fully revealed for ALL factions (3 grids flooded).');
+        } catch(e) { console.error('[RTS FATAL] RTSFogOfWar install:', e && e.message); }
+        // Install RTS economy
+        try { window.RTSEconomySystem.install(scene); console.log('[Genesis] RTSEconomySystem installed.'); } catch(e) { console.error('[RTS FATAL] RTSEconomySystem.install:', e && e.message); }
+        // Install RTS input router — CRITICAL: must have scene + camera
+        try {
+          if (!camera) { console.error('[RTS FATAL] camera is NULL — RTSInputRouter cannot install!'); }
+          else { window.RTSInputRouter.install({ scene: scene, camera: camera }); console.log('[Genesis] RTSInputRouter installed.'); }
+        } catch(e) { console.error('[RTS FATAL] RTSInputRouter.install:', e && e.message); }
+        // Install RTS nav grid (pathfinding)
+        try { window.RTSNavGrid.install({}); console.log('[Genesis] RTSNavGrid installed.'); } catch(e) { console.error('[RTS FATAL] RTSNavGrid.install:', e && e.message); }
+        // Install RTS bridge (wires selection, order generator, order executor)
+        try { window.RTSBridge.install({ scene: scene, camera: camera, production: window.RTSProductionSystem }); console.log('[Genesis] RTSBridge installed.'); } catch(e) { console.error('[RTS FATAL] RTSBridge.install:', e && e.message); }
+        // Install RTS UI core (economy HUD, hotkeys)
+        try { window.RTSUICore.install(); console.log('[Genesis] RTSUICore installed.'); } catch(e) { console.error('[RTS FATAL] RTSUICore.install:', e && e.message); }
+        // Install RTS UI Engine (health bars, box-select overlay, selection)
+        try { window.RTSUIEngine.install(scene, camera); console.log('[Genesis] RTSUIEngine installed.'); } catch(e) { console.error('[RTS FATAL] RTSUIEngine.install:', e && e.message); }
+        // Install base builder (B-key menu, R-key rotation, construction)
+        try { window.RTSBaseBuilder.install({ scene, camera }); console.log('[Genesis] RTSBaseBuilder installed.'); } catch(e) { console.error('[RTS FATAL] RTSBaseBuilder.install:', e && e.message); }
+        // Install production system
+        try { window.RTSProductionSystem.install({ scene, economy: window.RTSEconomySystem }); console.log('[Genesis] RTSProductionSystem installed.'); } catch(e) { console.error('[RTS FATAL] RTSProductionSystem.install:', e && e.message); }
+        // Install production palette UI
+        try { window.RTSProductionPalette._instance = new window.RTSProductionPalette({ scene, economy: window.RTSEconomySystem }); window.RTSProductionPalette._instance.install(); console.log('[Genesis] RTSProductionPalette installed.'); } catch(e) { console.error('[RTS FATAL] RTSProductionPalette.install:', e && e.message); }
+        // Install game state
+        try { window.RTSGameState.install({ economy: window.RTSEconomySystem, entities: window.RTSEngineCore?.ENTITIES }); console.log('[Genesis] RTSGameState installed.'); } catch(e) { console.error('[RTS FATAL] RTSGameState.install:', e && e.message); }
+        // Install minimap
+        try { window.__rtsMinimap = new window.RTSMinimap({ scene, camera, entities: window.RTSEngineCore?.ENTITIES }); window.__rtsMinimap.install(); console.log('[Genesis] RTSMinimap installed.'); } catch(e) { console.error('[RTS FATAL] RTSMinimap.install:', e && e.message); }
+        // Install AI Director — spawns enemy waves
+        try { window.RTSAIDirector.install(scene); console.log('[Genesis] RTSAIDirector installed.'); } catch(e) { console.error('[RTS FATAL] RTSAIDirector.install:', e && e.message); }
+        // Install War Command — spawns player army, alerts, accelerates AI
+        try { window.RTSWarCommand.install(scene); console.log('[Genesis] RTSWarCommand installed.'); } catch(e) { console.error('[RTS FATAL] RTSWarCommand.install:', e && e.message); }
+        // Install AI Brain — tactical micro for imperium + bioHive
+        try { window.RTSAIBrainInstance = new window.RTSAIBrain({ entities: window.RTSEngineCore?.ENTITIES, fog: window.RTSFogOfWarInstance, playerIndex: 1 }); window.RTSAIBrainInstance.install(); console.log('[Genesis] RTSAIBrain installed.'); } catch(e) { console.error('[RTS FATAL] RTSAIBrain.install:', e && e.message); }
+        // VOID POPULATION — install + populate (worlds, NPCs, RTS entities)
+        try { installVoidPopulation(window.Genesis); } catch(e) { console.error('[RTS FATAL] installVoidPopulation:', e && e.message); }
+        if (window.Genesis && window.Genesis.VoidPopulation) {
+          try { window.Genesis.VoidPopulation.populate({ scene, camera }); console.log('[Genesis] VoidPopulation ready:', window.Genesis.VoidPopulation.summary()); }
+          catch(e) { console.error('[RTS FATAL] VoidPopulation.populate:', e && e.stack); }
         }
-        window.__GENESIS_VOID_POPULATION = (typeof window.__GENESIS_VOID_POPULATION === 'boolean') ? window.__GENESIS_VOID_POPULATION : true;
-        if (window.__GENESIS_VOID_POPULATION !== false) {
-          // Install RTS engine core with scene BEFORE populating worlds
-          if (window.RTSEngineCore && scene) {
-            window.RTSEngineCore.install(scene);
-            console.log('[Genesis] RTSEngineCore installed with scene.');
-          }
-          // Install Fog of War (256x256 grid, updates from unit/building vision)
-          // FOG DISABLED: flood-fill entire grid as explored+visible so RTS is always visible
-          if (window.RTSFogOfWar && scene) {
-            window.RTSFogOfWarInstance = new window.RTSFogOfWar({ scene: scene, entities: window.RTSEngineCore?.ENTITIES });
-            window.RTSFogOfWarInstance.install();
-            // Flood-fill ALL player grids (0=player, 1=imperium, 2=bioHive) as EXPLORED + VISIBLE
-            // This ensures RTSAIBrain._canSee() works for all AI factions
-            for (var _pi = 0; _pi < 3; _pi++) {
-              var _fm = window.RTSFogOfWarInstance.mascara ? window.RTSFogOfWarInstance.mascara(_pi) : null;
-              if (_fm) { for (var _fi = 0; _fi < _fm.length; _fi++) _fm[_fi] = 3; }
-            }
-            // Prevent future fog ticks from re-erasing (keep everything visible)
-            window.RTSFogOfWarInstance._refresh = function() {};
-            console.log('[Genesis] RTSFogOfWar installed — fully revealed for ALL factions (3 grids flooded).');
-          }
-          // Install RTS economy
-          if (window.RTSEconomySystem && scene) {
-            window.RTSEconomySystem.install(scene);
-            console.log('[Genesis] RTSEconomySystem installed.');
-          }
-          // Install RTS input router
-          if (window.RTSInputRouter && scene && camera) {
-            window.RTSInputRouter.install({ scene: scene, camera: camera });
-            console.log('[Genesis] RTSInputRouter installed.');
-          }
-          // Install RTS nav grid (pathfinding)
-          if (window.RTSNavGrid) {
-            window.RTSNavGrid.install({});
-            console.log('[Genesis] RTSNavGrid installed.');
-          }
-          // Install RTS bridge (wires selection, order generator, order executor)
-          if (window.RTSBridge && scene && camera) {
-            window.RTSBridge.install({ scene: scene, camera: camera, production: window.RTSProductionSystem });
-            console.log('[Genesis] RTSBridge installed — selection + orders + executor wired.');
-          }
-          // Install RTS UI core (economy HUD, hotkeys)
-          if (window.RTSUICore) {
-            window.RTSUICore.install();
-            console.log('[Genesis] RTSUICore installed — HUD and hotkeys active.');
-          }
-          // Install RTS UI Engine (health bars, box-select overlay, selection)
-          if (window.RTSUIEngine) {
-            try { window.RTSUIEngine.install(scene, camera); console.log('[Genesis] RTSUIEngine installed — health bars + selection.'); } catch(e) { console.warn('[Genesis] RTSUIEngine install failed:', e && e.message); }
-          }
-          installVoidPopulation(window.Genesis);
-          if (window.Genesis && window.Genesis.VoidPopulation) {
-            window.Genesis.VoidPopulation.populate({ scene, camera });
-            console.log('[Genesis] VoidPopulation ready:', window.Genesis.VoidPopulation.summary());
-          }
-          // Wire building click panel after camera is available
-          if (window.VoidBuildingPanel && camera) {
-            window.VoidBuildingPanel.setupClickDetection(camera);
-            console.log('[Genesis] VoidBuildingPanel click detection active.');
-          }
-          // Install enemy AI director (spawns NPC factions, forms attack waves)
-          if (window.RTSAIDirector) {
-            try { window.RTSAIDirector.install(scene); } catch(e) { console.warn('[Genesis] AI Director install failed:', e && e.message); }
-          }
-          // Install war command (accelerates AI, spawns player army, alerts)
-          if (window.RTSWarCommand) {
-            try { window.RTSWarCommand.install(scene); } catch(e) { console.warn('[Genesis] War Command install failed:', e && e.message); }
-          }
-          // Install production palette UI (train/build units via bottom bar)
-          if (window.RTSProductionPalette) {
-            try { window.RTSProductionPalette._instance = new window.RTSProductionPalette({ scene, economy: window.RTSEconomySystem }); window.RTSProductionPalette._instance.install(); } catch(e) { console.warn('[Genesis] Production Palette install failed:', e && e.message); }
-          }
+        // Wire building click panel after camera is available
+        if (window.VoidBuildingPanel && camera) {
+          try { window.VoidBuildingPanel.setupClickDetection(camera); console.log('[Genesis] VoidBuildingPanel click detection active.'); } catch(e) { console.error('[RTS FATAL] VoidBuildingPanel:', e && e.message); }
         }
 
         // ========== P138/P183: PLT LEDGER (per-action Profit + Love - Tax audit trail) ==========
@@ -15539,15 +15518,15 @@ keyState[e.code] = true;
             // Direct RTS tick fallback — ensures RTS combat/movement/harvest runs even if
             // VoidPopulation's EngineScheduler defineTick didn't register (boot race).
             if (window.Genesis && window.Genesis.VoidPopulation && typeof window.Genesis.VoidPopulation.tick === 'function') {
-              try { window.Genesis.VoidPopulation.tick(dt); } catch (e) { console.error('[RTS] tick failed:', e && e.stack); }
+              try { window.Genesis.VoidPopulation.tick(dt); } catch (e) { console.error('[RTS] VoidPopulation.tick failed:', e && e.stack); }
             } else if (window.RTSEngineCore && window.RTSEngineCore.tick) {
-              try { window.RTSEngineCore.tick(dt); } catch (e) {}
-              if (window.RTSBridge && window.RTSBridge.tick) try { window.RTSBridge.tick(dt); } catch (e) {}
-              if (window.RTSFogOfWarInstance && window.RTSFogOfWarInstance.tick) try { window.RTSFogOfWarInstance.tick(dt); } catch (e) {}
-              if (window.RTSBaseBuilder && window.RTSBaseBuilder.tick) try { window.RTSBaseBuilder.tick(dt); } catch (e) {}
-              if (window.RTSWarCommand && window.RTSWarCommand.tick) try { window.RTSWarCommand.tick(dt); } catch (e) {}
-              if (window.RTSAIDirector && window.RTSAIDirector.tick) try { window.RTSAIDirector.tick(dt); } catch (e) {}
-              if (window.RTSGameState && typeof window.RTSGameState.tick === 'function') try { window.RTSGameState.tick(); } catch (e) {}
+              try { window.RTSEngineCore.tick(dt); } catch (e) { console.error('[RTS] EngineCore.tick failed:', e && e.message); }
+              if (window.RTSBridge && window.RTSBridge.tick) try { window.RTSBridge.tick(dt); } catch (e) { console.error('[RTS] Bridge.tick failed:', e && e.message); }
+              if (window.RTSFogOfWarInstance && window.RTSFogOfWarInstance.tick) try { window.RTSFogOfWarInstance.tick(dt); } catch (e) { console.error('[RTS] Fog.tick failed:', e && e.message); }
+              if (window.RTSBaseBuilder && window.RTSBaseBuilder.tick) try { window.RTSBaseBuilder.tick(dt); } catch (e) { console.error('[RTS] BaseBuilder.tick failed:', e && e.message); }
+              if (window.RTSWarCommand && window.RTSWarCommand.tick) try { window.RTSWarCommand.tick(dt); } catch (e) { console.error('[RTS] WarCommand.tick failed:', e && e.message); }
+              if (window.RTSAIDirector && window.RTSAIDirector.tick) try { window.RTSAIDirector.tick(dt); } catch (e) { console.error('[RTS] AIDirector.tick failed:', e && e.message); }
+              if (window.RTSGameState && typeof window.RTSGameState.tick === 'function') try { window.RTSGameState.tick(); } catch (e) { console.error('[RTS] GameState.tick failed:', e && e.message); }
             }
             if (window.__GENESIS_POPULATION_ENGINE !== false && Genesis.PopulationEngine && typeof Genesis.PopulationEngine.tick === 'function') Genesis.PopulationEngine.tick(dt);
             // Genesis Scale Engine (Phase E): tick AFTER PopulationEngine. Bounded
