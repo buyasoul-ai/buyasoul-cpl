@@ -3484,6 +3484,9 @@ export function install(Genesis) {
     })(); } catch(e) { console.error('[RTS FATAL] RTSFogOfWar:', e && e.message); }
     try { window.__rtsMinimap = new window.RTSMinimap({ scene, camera, entities: window.RTSEngineCore?.ENTITIES }); window.__rtsMinimap.install(); } catch(e) { console.error('[RTS FATAL] RTSMinimap:', e && e.message); }
     try { window.RTSEconomySystem && window.RTSEconomySystem.install(scene); } catch(e) { console.error('[RTS FATAL] RTSEconomySystem:', e && e.message); }
+    try { window.RTSUICore && window.RTSUICore.install(); } catch(e) { console.error('[RTS FATAL] RTSUICore:', e && e.message); }
+    // GodforgeUI auto-init ran before RTSUICore HUD existed — re-init now that HUD is ready
+    try { window.GodforgeUI && window.GodforgeUI.init(); } catch(e) { console.error('[RTS FATAL] GodforgeUI.init:', e && e.message); }
     try { window.RTSUIEngine && window.RTSUIEngine.install(scene, camera); } catch(e) { console.error('[RTS FATAL] RTSUIEngine:', e && e.message); }
     try { window.RTSBaseBuilder && window.RTSBaseBuilder.install({ scene: scene, camera: camera }); } catch(e) { console.error('[RTS FATAL] RTSBaseBuilder:', e && e.message); }
     try { window.RTSProductionSystem && window.RTSProductionSystem.install(scene); } catch(e) { console.error('[RTS FATAL] RTSProductionSystem:', e && e.message); }
@@ -4002,7 +4005,8 @@ export function install(Genesis) {
     try { if (window.RTSGameState && typeof window.RTSGameState.tick === 'function') window.RTSGameState.tick(); } catch(e) { console.error('[RTS] GameState.tick:', e && e.message); }
     try { if (window.GodPowersEngine && window.GodPowersEngine.tick) window.GodPowersEngine.tick(dt); } catch(e) { console.error('[RTS] GodPowers.tick:', e && e.message); }
     try { if (window.__rtsMinimap && window.__rtsMinimap.tick) window.__rtsMinimap.tick(dt); } catch(e) { console.error('[RTS] Minimap.tick:', e && e.message); }
-    try { if (window.RTSProductionPalette && window.RTSProductionPalette.tick) window.RTSProductionPalette.tick(dt); } catch(e) { console.error('[RTS] Palette.tick:', e && e.message); }
+    try { if (window.RTSProductionPalette && window.RTSProductionPalette._instance && window.RTSProductionPalette._instance.tick) window.RTSProductionPalette._instance.tick(dt); } catch(e) { console.error('[RTS] Palette.tick:', e && e.message); }
+    try { if (window.RTSFarmSystem && window.RTSFarmSystem.tick) window.RTSFarmSystem.tick(dt); } catch(e) { console.error('[RTS] Farm.tick:', e && e.message); }
     try { if (window.AdvancedNPCEngine && window.AdvancedNPCEngine.tick) window.AdvancedNPCEngine.tick(dt); } catch(e) { console.error('[RTS] NPCEngine.tick:', e && e.message); }
     try { if (window.RTSAIDirector && window.RTSAIDirector.tick) window.RTSAIDirector.tick(dt); } catch(e) { console.error('[RTS] AIDirector.tick:', e && e.message); }
     try { if (window.RTSWarCommand && window.RTSWarCommand.tick) window.RTSWarCommand.tick(dt); } catch(e) { console.error('[RTS] WarCommand.tick:', e && e.message); }
