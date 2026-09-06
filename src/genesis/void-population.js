@@ -233,10 +233,8 @@ export function install(Genesis) {
   function _texturedStd(type, color, opts) {
     if (window.VoidBuildingTextures && window.VoidBuildingTextures.materialFor) {
       return window.VoidBuildingTextures.materialFor(type, color, opts);
-        }
-      }
-      console.log('[VoidPopulation] Registered Grand Tower + city centers with AoE-style RTS extensions.');
     }
+  }
 
   // Point-light factory that registers with the LightingManager so the hard cap
   // (8 active point lights) tames the 400+ light scene. On low GPUs lights are
@@ -3529,6 +3527,8 @@ export function install(Genesis) {
           console.log(`[VoidPopulation] Registered ${bList.length} AoE-style buildings in ${wt} world.`);
         }
       }
+      console.log('[VoidPopulation] Registered Grand Tower + city centers with AoE-style RTS extensions.');
+    }
 
     // Install RTS Subsystem & AI Faction Commanders
     // rts-subsystem DISABLED per AGENTS.md — causes conflicts
