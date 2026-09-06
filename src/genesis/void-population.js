@@ -4,7 +4,9 @@
 // Beacons are created SYNCHRONOUSLY so they're always visible.
 // Flag-gated by window.__GENESIS_VOID_POPULATION (default ON).
 
-import * as THREE from 'three';
+// ESM 'three' import removed — it fetches from unpkg which can fail and crash
+// the ENTIRE module. This file uses window.THREE (set by three.min.js classic script) everywhere.
+// import * as THREE from 'three';
 import { installVoidCosmos } from './void-cosmos.js';
 
 const WORLD_COUNT = 30;
