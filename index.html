@@ -8859,6 +8859,12 @@ if (window.__GENESIS_SECTOR_MANAGER !== false && Genesis.SectorManager) {
           installSoulMultiverse(window.Genesis, { THREE, scene, camera, seed: 'Craig-Prime' });
         }
 
+        // ========== REALM WORLD — main world initialization ==========
+        window.__GENESIS_REALM_WORLD = (typeof window.__GENESIS_REALM_WORLD === 'boolean') ? window.__GENESIS_REALM_WORLD : true;
+        if (window.__GENESIS_REALM_WORLD !== false) {
+          installRealmWorld(window.Genesis);
+        }
+
         // ========== VOID POPULATION — Lost Worlds scattered in the void ==========
         // OPEN ALL GATES: no feature flags, no try/catch swallowing, no if-guards
         window.__GENESIS_VOID_POPULATION = true;
