@@ -159,7 +159,10 @@
     // HUD updates are now throttled / event-driven to avoid per-frame DOM writes.
   }
 
+  let installed = false;
   function install() {
+    if (installed) return;
+    installed = true;
     createHUD();
     // Attempt to subscribe to any economy event emitter; fall back to a throttled poll.
     if (window.RTSEconomySystem && typeof window.RTSEconomySystem.on === 'function') {

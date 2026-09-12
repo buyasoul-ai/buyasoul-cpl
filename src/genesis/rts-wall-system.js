@@ -12,7 +12,7 @@
 
   var WALL_TYPES = {
     palisade: { hp: 100, height: 3, thickness: 0.3, color: 0x8b6914, cost: { wood: 2 } },
-    stone: { hp: 500, height: 5, thickness: 0.8, color: 0x888888, cost: { stone: 100 } }
+    stone: { hp: 500, height: 5, thickness: 0.8, color: 0x888888, cost: { wood: 100 } }
   };
 
   function placeWallSegment(scene, x, z, direction, type, faction) {

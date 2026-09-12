@@ -3467,7 +3467,6 @@ export function install(Genesis) {
     try { window.RTSEngineCore && window.RTSEngineCore.install(scene); } catch(e) { console.error('[RTS FATAL] RTSEngineCore:', e && e.message); }
     try { window.RTSNavGrid && window.RTSNavGrid.install({ cellSize: 5 }); } catch(e) { console.error('[RTS FATAL] RTSNavGrid:', e && e.message); }
     try { window.RTSInputRouter && window.RTSInputRouter.install({ scene: scene, camera: camera }); } catch(e) { console.error('[RTS FATAL] RTSInputRouter:', e && e.message); }
-    try { window.RTSUICore && window.RTSUICore.install(); } catch(e) { console.error('[RTS FATAL] RTSUICore:', e && e.message); }
     try { window.RTSBridge && window.RTSBridge.install({ scene: scene, camera: camera }); } catch(e) { console.error('[RTS FATAL] RTSBridge:', e && e.message); }
     try { window.RTSProductionPalette && ((window.RTSProductionPalette._ents = window.RTSEngineCore?.ENTITIES, window.RTSProductionPalette._scene = scene, window.RTSProductionPalette.install())); } catch(e) { console.error('[RTS FATAL] RTSProductionPalette:', e && e.message); }
     try { window.RTSFogOfWar && !window.RTSFogOfWarInstance && (() => {
@@ -3543,18 +3542,6 @@ export function install(Genesis) {
     // if (window.RTSAIFaction) {
     //   try { window.RTSAIFaction.install(scene); } catch(e) { console.warn('[VoidPopulation] RTSAIFaction install failed:', e && e.message); }
     // }
-
-    // RTS AI Brain — fog-limited strategic/tactical AI (imperium + bioHive)
-    if (window.RTSAIBrain && !window.RTSAIBrainInstance) {
-      try {
-        window.RTSAIBrainInstance = new window.RTSAIBrain({
-          entities: window.RTSEngineCore?.ENTITIES,
-          fog: window.RTSFogOfWarInstance,
-          playerIndex: 1
-        });
-        window.RTSAIBrainInstance.install();
-      } catch(e) { console.warn('[VoidPopulation] RTSAIBrain install failed:', e && e.message); }
-    }
 
     // Install Terminal Sanctum in Central Pyramid (0,0,0)
     if (window.TerminalSanctum) {
